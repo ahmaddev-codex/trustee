@@ -1,0 +1,79 @@
+import { NextResponse } from "next/server";
+
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { koboToNairaAmount } from "@/lib/money";
+import { refundEligibleAt } from "@/lib/escrow";
+import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
+import { serializeOrder } from "@/lib/serialize";
+
+export async function POST(
+  _request: Request,
+  ctx: RouteContext<"/api/orders/[id]/refund-request">,
+) {
+  const { id } = await ctx.params;
+
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { buyer: true, listing: { select: { title: true } } },
+  });
+  if (!order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+  if (order.buyerId !== session.user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+  if (order.status !== "FUNDED" || !order.fundedAt) {
+    return NextResponse.json({ error: "This order isn't eligible for a refund" }, { status: 409 });
+  }
+  if (new Date() < refundEligibleAt(order.fundedAt)) {
+    return NextResponse.json(
+      { error: "Give the seller a bit more time to ship before requesting a refund" },
+      { status: 409 },
+    );
+  }
+
+  const { buyer } = order;
+  if (!buyer.bankAccountNumber || !buyer.bankCode || !buyer.bankAccountName) {
+    return NextResponse.json(
+      { error: "Add a verified payout account first so we know where to send the refund" },
+      { status: 409 },
+    );
+  }
+
+  const reference = `refund-${order.id}`;
+
+  try {
+    const transfer = await initiateSingleTransfer({
+      amount: koboToNairaAmount(order.amountKobo),
+      reference,
+      narration: `Trustee refund — ${order.listing.title}`,
+      destinationBankCode: buyer.bankCode,
+      destinationAccountNumber: buyer.bankAccountNumber,
+      destinationAccountName: buyer.bankAccountName,
+    });
+
+    const isComplete = transfer.status === "SUCCESS" || transfer.status === "COMPLETED";
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        monnifyDisbursementRef: reference,
+        ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
+      },
+    });
+
+    return NextResponse.json({ order: serializeOrder(updated), pendingAuthorization: !isComplete });
+  } catch (error) {
+    const message =
+      error instanceof MonnifyError
+        ? error.message
+        : "Could not start the refund. Please try again.";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}

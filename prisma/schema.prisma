@@ -1,0 +1,151 @@
+// Prisma schema for Trustee — P2P classifieds escrow powered by Monnify
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  REMOVED
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  FUNDED
+  SHIPPED
+  RELEASED
+  DISPUTED
+  REFUNDED
+  CANCELLED
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED_RELEASE
+  RESOLVED_REFUND
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  passwordHash      String
+  role              Role     @default(USER)
+
+  bankAccountNumber String?
+  bankCode          String?
+  bankAccountName   String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  listings          Listing[]
+  buyerOrders       Order[]      @relation("BuyerOrders")
+  sellerOrders      Order[]      @relation("SellerOrders")
+  disputesRaised    Dispute[]
+
+  @@map("users")
+}
+
+model Listing {
+  id          String        @id @default(cuid())
+  sellerId    String
+  seller      User          @relation(fields: [sellerId], references: [id])
+
+  title       String
+  description String
+  priceKobo   BigInt
+  imageUrls   String[]
+  category    String
+  status      ListingStatus @default(ACTIVE)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  orders      Order[]
+
+  @@index([status])
+  @@map("listings")
+}
+
+model Order {
+  id     String @id @default(cuid())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  buyerId  String
+  buyer    User   @relation("BuyerOrders", fields: [buyerId], references: [id])
+
+  sellerId String
+  seller   User   @relation("SellerOrders", fields: [sellerId], references: [id])
+
+  amountKobo      BigInt
+  platformFeeKobo BigInt
+  status          OrderStatus @default(AWAITING_PAYMENT)
+
+  monnifyPaymentReference    String  @unique
+  monnifyTransactionRef      String?
+  monnifyDisbursementRef     String?
+
+  fundedAt      DateTime?
+  shippedAt     DateTime?
+  autoReleaseAt DateTime?
+  releasedAt    DateTime?
+  refundedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  disputes Dispute[]
+
+  @@index([status])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("orders")
+}
+
+model Dispute {
+  id           String        @id @default(cuid())
+
+  orderId      String
+  order        Order         @relation(fields: [orderId], references: [id])
+
+  raisedById   String
+  raisedBy     User          @relation(fields: [raisedById], references: [id])
+
+  reason         String
+  status         DisputeStatus @default(OPEN)
+  resolutionNote String?
+  resolvedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("disputes")
+}
+
+model WebhookEvent {
+  id               String    @id @default(cuid())
+  eventType        String
+  paymentReference String
+  rawPayload       Json
+  processedAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([paymentReference])
+  @@map("webhook_events")
+}

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trustee
+      POSTGRES_PASSWORD: trustee
+      POSTGRES_DB: trustee
+    ports:
+      - "5432:5432"
+    volumes:
+      - trustee_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  trustee_postgres_data:
