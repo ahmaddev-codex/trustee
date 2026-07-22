@@ -9,10 +9,18 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await prisma.notification.updateMany({
-    where: { userId: session.user.id, read: false },
-    data: { read: true },
-  });
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: session.user.id, read: false },
+      data: { read: true },
+    });
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to mark all notifications as read:", error);
+    return NextResponse.json(
+      { error: "Failed to mark all notifications as read. Please try again." },
+      { status: 500 },
+    );
+  }
 }

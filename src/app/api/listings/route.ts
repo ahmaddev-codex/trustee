@@ -25,39 +25,47 @@ export async function POST(request: Request) {
 
   const { title, description, priceNaira, category, imageUrls } = parsed.data;
 
-  let listing = await prisma.listing.create({
-    data: {
-      sellerId: session.user.id,
-      title,
-      description,
-      priceKobo: nairaToKobo(priceNaira),
-      category,
-      imageUrls,
-    },
-  });
-
   try {
-    const screen = await screenListing({ title, description, priceNaira, category });
-    if (screen.flagged) {
-      listing = await prisma.listing.update({
-        where: { id: listing.id },
-        data: { aiFlagged: true, aiFlagReason: screen.reason },
-      });
-      await notifyAdmins({
-        type: "LISTING_FLAGGED",
-        title: "Listing flagged for review",
-        body: `"${title}" was flagged: ${screen.reason ?? "possible scam signal"}`,
-        link: "/admin",
-      });
-    }
-  } catch (error) {
-    console.error("Listing scam-screen failed, leaving listing unflagged", error);
-  }
+    let listing = await prisma.listing.create({
+      data: {
+        sellerId: session.user.id,
+        title,
+        description,
+        priceKobo: nairaToKobo(priceNaira),
+        category,
+        imageUrls,
+      },
+    });
 
-  return NextResponse.json(
-    { listing: { ...listing, priceKobo: listing.priceKobo.toString() } },
-    { status: 201 },
-  );
+    try {
+      const screen = await screenListing({ title, description, priceNaira, category });
+      if (screen.flagged) {
+        listing = await prisma.listing.update({
+          where: { id: listing.id },
+          data: { aiFlagged: true, aiFlagReason: screen.reason },
+        });
+        await notifyAdmins({
+          type: "LISTING_FLAGGED",
+          title: "Listing flagged for review",
+          body: `"${title}" was flagged: ${screen.reason ?? "possible scam signal"}`,
+          link: "/admin",
+        });
+      }
+    } catch (error) {
+      console.error("Listing scam-screen failed, leaving listing unflagged", error);
+    }
+
+    return NextResponse.json(
+      { listing: { ...listing, priceKobo: listing.priceKobo.toString() } },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Failed to create listing:", error);
+    return NextResponse.json(
+      { error: "Failed to create listing. Please try again." },
+      { status: 500 },
+    );
+  }
 }
 
 export async function GET() {
@@ -66,12 +74,20 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const listings = await prisma.listing.findMany({
-    where: { sellerId: session.user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    const listings = await prisma.listing.findMany({
+      where: { sellerId: session.user.id },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json({
-    listings: listings.map((l) => ({ ...l, priceKobo: l.priceKobo.toString() })),
-  });
+    return NextResponse.json({
+      listings: listings.map((l) => ({ ...l, priceKobo: l.priceKobo.toString() })),
+    });
+  } catch (error) {
+    console.error("Failed to fetch listings:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch listings. Please try again." },
+      { status: 500 },
+    );
+  }
 }

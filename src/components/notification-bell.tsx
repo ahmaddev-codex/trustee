@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { TbBell } from "react-icons/tb";
 
 import { Button } from "@/components/ui/button";
@@ -39,11 +40,13 @@ export function NotificationBell() {
   const markRead = useMutation({
     mutationFn: (id: string) => apiFetch(`/api/notifications/${id}/read`, { method: "POST" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update notification"),
   });
 
   const markAllRead = useMutation({
     mutationFn: () => apiFetch("/api/notifications/read-all", { method: "POST" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not mark notifications as read"),
   });
 
   if (status !== "authenticated") return null;

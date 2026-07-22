@@ -18,33 +18,41 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
     return NextResponse.json({ error: "Tell us a bit more about the issue" }, { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: { listing: { select: { title: true } } },
-  });
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
-  if (order.buyerId !== session.user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-  if (order.status !== "FUNDED" && order.status !== "SHIPPED") {
-    return NextResponse.json({ error: "This order can't be disputed" }, { status: 409 });
-  }
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { listing: { select: { title: true } } },
+    });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (order.buyerId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    if (order.status !== "FUNDED" && order.status !== "SHIPPED") {
+      return NextResponse.json({ error: "This order can't be disputed" }, { status: 409 });
+    }
 
-  await prisma.$transaction([
-    prisma.dispute.create({
-      data: { orderId: id, raisedById: session.user.id, reason },
-    }),
-    prisma.order.update({ where: { id }, data: { status: "DISPUTED" } }),
-  ]);
+    await prisma.$transaction([
+      prisma.dispute.create({
+        data: { orderId: id, raisedById: session.user.id, reason },
+      }),
+      prisma.order.update({ where: { id }, data: { status: "DISPUTED" } }),
+    ]);
 
-  await notifyAdmins({
-    type: "DISPUTE_RAISED",
-    title: "New dispute raised",
-    body: `A dispute was raised for "${order.listing.title}".`,
-    link: "/admin",
-  });
+    await notifyAdmins({
+      type: "DISPUTE_RAISED",
+      title: "New dispute raised",
+      body: `A dispute was raised for "${order.listing.title}".`,
+      link: "/admin",
+    });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to raise dispute:", error);
+    return NextResponse.json(
+      { error: "Failed to raise dispute. Please try again." },
+      { status: 500 },
+    );
+  }
 }
