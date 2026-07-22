@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { TbX } from "react-icons/tb";
+import { TbX, TbArrowLeft } from "react-icons/tb";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,14 @@ export default function NewListingPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6 sm:px-6 sm:py-8">
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <TbArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <div className="mb-6">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">
           List something for sale

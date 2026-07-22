@@ -6,8 +6,9 @@ import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
-import { TbLock } from "react-icons/tb";
+import { TbLock, TbRosetteDiscountCheck } from "react-icons/tb";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +16,29 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { signupSchema, type SignupInput } from "@/lib/validations/auth";
 import { zodResolver } from "@/lib/zod-resolver";
+
+function celebrate() {
+  confetti({
+    particleCount: 120,
+    spread: 75,
+    origin: { y: 0.6 },
+    colors: ["#4334d3", "#7147f6", "#e1ef9a", "#90eaf2"],
+  });
+}
 
 export default function SignupPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
 
   const {
     register,
@@ -57,14 +75,20 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/dashboard");
       router.refresh();
+      setWelcomeOpen(true);
+      celebrate();
     } catch (error) {
       console.error("Signup failed:", error);
       toast.error("Could not create account. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const goTo = (path: string) => {
+    setWelcomeOpen(false);
+    router.push(path);
   };
 
   return (
@@ -132,6 +156,29 @@ export default function SignupPage() {
         <TbLock className="size-4 shrink-0 text-brand" />
         Every purchase is protected by escrow — sellers only get paid once you confirm receipt.
       </div>
+
+      <Dialog open={welcomeOpen} onOpenChange={(open) => !open && goTo("/dashboard")}>
+        <DialogContent>
+          <DialogHeader>
+            <TbRosetteDiscountCheck className="mb-1 size-8 text-brand" />
+            <DialogTitle className="font-display text-xl">
+              You&apos;re successfully registered!
+            </DialogTitle>
+            <DialogDescription>
+              Your account is ready to go. What would you like to do first?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button onClick={() => goTo("/sell/new")}>Start listing products</Button>
+            <Button variant="outline" onClick={() => goTo("/profile/bank-details")}>
+              Connect payout details
+            </Button>
+            <Button variant="ghost" onClick={() => goTo("/dashboard")}>
+              I&apos;ll do this later — take me to my dashboard
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
