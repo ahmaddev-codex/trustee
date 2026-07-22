@@ -59,33 +59,39 @@ export default async function MarketplacePage({
   const minPrice = minPriceNaira ? Number(minPriceNaira) : undefined;
   const maxPrice = maxPriceNaira ? Number(maxPriceNaira) : undefined;
 
-  const listings = await prisma.listing.findMany({
-    where: {
-      status: "ACTIVE",
-      ...(activeCategory ? { category: activeCategory } : {}),
-      ...(q
-        ? {
-            OR: [
-              { title: { contains: q, mode: "insensitive" } },
-              { description: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-      ...(minPrice !== undefined && !Number.isNaN(minPrice)
-        ? { priceKobo: { gte: nairaToKobo(minPrice) } }
-        : {}),
-      ...(maxPrice !== undefined && !Number.isNaN(maxPrice)
-        ? { priceKobo: { lte: nairaToKobo(maxPrice) } }
-        : {}),
-    },
-    orderBy:
-      sort === "price_asc"
-        ? { priceKobo: "asc" }
-        : sort === "price_desc"
-          ? { priceKobo: "desc" }
-          : { createdAt: "desc" },
-    include: { seller: { select: { name: true } } },
-  });
+  let listings = [];
+  try {
+    listings = await prisma.listing.findMany({
+      where: {
+        status: "ACTIVE",
+        ...(activeCategory ? { category: activeCategory } : {}),
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q, mode: "insensitive" } },
+                { description: { contains: q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+        ...(minPrice !== undefined && !Number.isNaN(minPrice)
+          ? { priceKobo: { gte: nairaToKobo(minPrice) } }
+          : {}),
+        ...(maxPrice !== undefined && !Number.isNaN(maxPrice)
+          ? { priceKobo: { lte: nairaToKobo(maxPrice) } }
+          : {}),
+      },
+      orderBy:
+        sort === "price_asc"
+          ? { priceKobo: "asc" }
+          : sort === "price_desc"
+            ? { priceKobo: "desc" }
+            : { createdAt: "desc" },
+      include: { seller: { select: { name: true } } },
+    });
+  } catch (error) {
+    console.error("Failed to fetch listings:", error);
+    // Continue with empty listings array
+  }
 
   const hasFilters = Boolean(q || activeCategory || minPriceNaira || maxPriceNaira);
 

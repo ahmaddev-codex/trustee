@@ -44,12 +44,18 @@ const steps: {
 ];
 
 export default async function Home() {
-  const recentListings = await prisma.listing.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    take: 4,
-    include: { seller: { select: { name: true } } },
-  });
+  let recentListings = [];
+  try {
+    recentListings = await prisma.listing.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      include: { seller: { select: { name: true } } },
+    });
+  } catch (error) {
+    console.error("Failed to fetch listings:", error);
+    // Continue with empty listings array
+  }
 
   return (
     <div>
