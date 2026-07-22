@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useMutation } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
+import { TbX } from "react-icons/tb";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,14 +38,14 @@ export default function NewListingPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(createListingSchema.omit({ imageUrls: true })),
     defaultValues: { category: "Other" },
   });
 
-  const category = watch("category");
+  const category = useWatch({ control, name: "category" });
 
   const createListing = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -75,12 +77,16 @@ export default function NewListingPage() {
   });
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-10">
+    <div className="mx-auto max-w-xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mb-6">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">
+          List something for sale
+        </h1>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-xl">
-            List something for sale
-          </CardTitle>
+          <CardTitle className="font-display text-xl">Listing details</CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -120,9 +126,13 @@ export default function NewListingPage() {
                   step="0.01"
                   {...register("priceNaira")}
                 />
-                {errors.priceNaira && (
+                {errors.priceNaira ? (
                   <p className="text-sm text-destructive">
                     {errors.priceNaira.message}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    A small platform fee is deducted from your payout at release.
                   </p>
                 )}
               </div>
@@ -156,17 +166,37 @@ export default function NewListingPage() {
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 multiple
-                onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, 6))}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files ?? []);
+                  if (selected.length > 6) {
+                    toast.error("Only the first 6 photos were kept — that's the max per listing.");
+                  }
+                  setFiles(selected.slice(0, 6));
+                }}
               />
+              <p className="text-xs text-muted-foreground">
+                Clear, well-lit photos build buyer trust.
+              </p>
               {files.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {files.map((file, i) => (
-                    <img
-                      key={i}
-                      src={URL.createObjectURL(file)}
-                      alt=""
-                      className="size-16 rounded-md border object-cover"
-                    />
+                    <div key={i} className="relative size-16 overflow-hidden rounded-md border">
+                      <Image
+                        src={URL.createObjectURL(file)}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
+                        aria-label="Remove photo"
+                      >
+                        <TbX className="size-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}

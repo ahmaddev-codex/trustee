@@ -1,44 +1,31 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { TbCircleCheck, TbCircle, TbShieldExclamation, TbArrowLeft } from "react-icons/tb";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatNaira } from "@/lib/money";
 import { verifyTransactionByPaymentReference } from "@/lib/monnify";
 import { autoReleaseDeadline, refundEligibleAt } from "@/lib/escrow";
+import { orderStatusCopy, autoReleaseNote, refundEligibleNote } from "@/lib/status";
+import { notify } from "@/lib/notifications";
 import { Badge } from "@/components/ui/badge";
 import { OrderActions } from "./order-actions";
 
 export const dynamic = "force-dynamic";
 
-const statusCopy: Record<string, { label: string; description: string }> = {
-  AWAITING_PAYMENT: {
-    label: "Awaiting payment",
-    description: "Waiting for the buyer's payment to be confirmed.",
-  },
-  FUNDED: {
-    label: "Funds in escrow",
-    description: "Payment received and held by Trustee. Waiting for the seller to ship.",
-  },
-  SHIPPED: {
-    label: "Shipped",
-    description: "The seller marked this as shipped. Funds release when the buyer confirms.",
-  },
-  RELEASED: {
-    label: "Released",
-    description: "Funds have been released to the seller.",
-  },
-  DISPUTED: {
-    label: "Disputed",
-    description: "This order is under review by Trustee.",
-  },
-  REFUNDED: {
-    label: "Refunded",
-    description: "Funds were refunded to the buyer.",
-  },
-  CANCELLED: {
-    label: "Cancelled",
-    description: "This order was cancelled before payment completed.",
-  },
+const statusCopy = orderStatusCopy;
+
+const happyPathSteps = [
+  { key: "FUNDED", label: "Paid" },
+  { key: "SHIPPED", label: "Shipped" },
+  { key: "RELEASED", label: "Confirmed" },
+];
+
+const branchStatus: Record<string, { label: string; tone: string }> = {
+  DISPUTED: { label: "Under review", tone: "text-destructive" },
+  REFUNDED: { label: "Refunded", tone: "text-muted-foreground" },
+  CANCELLED: { label: "Cancelled", tone: "text-muted-foreground" },
 };
 
 export default async function OrderDetailPage({
@@ -80,6 +67,13 @@ export default async function OrderDetailPage({
             seller: { select: { id: true, name: true } },
           },
         });
+        await notify({
+          userId: order.sellerId,
+          type: "ORDER_FUNDED",
+          title: "Your item sold",
+          body: `Payment received for "${order.listing.title}" — mark it shipped when it's on its way.`,
+          link: `/orders/${order.id}`,
+        });
       }
     } catch {
       // Not paid yet, or Monnify is unreachable — the buyer can retry from here.
@@ -89,7 +83,15 @@ export default async function OrderDetailPage({
   const copy = statusCopy[order.status] ?? { label: order.status, description: "" };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <TbArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">
@@ -101,6 +103,45 @@ export default async function OrderDetailPage({
         </div>
         <Badge className="rounded-full">{copy.label}</Badge>
       </div>
+
+      {branchStatus[order.status] ? (
+        <div
+          className={`mb-6 flex items-center gap-2 rounded-xl border p-3 text-sm font-medium ${branchStatus[order.status].tone}`}
+        >
+          <TbShieldExclamation className="size-4 shrink-0" />
+          {branchStatus[order.status].label}
+        </div>
+      ) : (
+        <div className="mb-6 flex items-center" aria-label="Order progress">
+          {happyPathSteps.map((step, i) => {
+            const done =
+              step.key === "FUNDED"
+                ? !!order.fundedAt
+                : step.key === "SHIPPED"
+                  ? !!order.shippedAt
+                  : order.status === "RELEASED";
+            return (
+              <div key={step.key} className="flex flex-1 items-center last:flex-none">
+                <div className="flex flex-col items-center gap-1">
+                  {done ? (
+                    <TbCircleCheck className="size-5 text-brand" />
+                  ) : (
+                    <TbCircle className="size-5 text-muted-foreground/40" />
+                  )}
+                  <span
+                    className={`text-xs ${done ? "font-medium text-foreground" : "text-muted-foreground"}`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+                {i < happyPathSteps.length - 1 && (
+                  <div className={`mx-2 h-px flex-1 ${done ? "bg-brand" : "bg-border"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="rounded-2xl border p-5">
         <p className="text-muted-foreground">{copy.description}</p>
@@ -121,19 +162,21 @@ export default async function OrderDetailPage({
             </div>
           )}
           {order.status === "SHIPPED" && order.shippedAt && (
-            <div>
+            <div className="col-span-2">
               <dt className="text-muted-foreground">Auto-releases</dt>
               <dd className="font-medium">
                 {autoReleaseDeadline(order.shippedAt).toLocaleDateString()}
               </dd>
+              <dd className="mt-0.5 text-xs text-muted-foreground">{autoReleaseNote}</dd>
             </div>
           )}
           {order.status === "FUNDED" && order.fundedAt && (
-            <div>
+            <div className="col-span-2">
               <dt className="text-muted-foreground">Refund eligible from</dt>
               <dd className="font-medium">
                 {refundEligibleAt(order.fundedAt).toLocaleDateString()}
               </dd>
+              <dd className="mt-0.5 text-xs text-muted-foreground">{refundEligibleNote}</dd>
             </div>
           )}
         </dl>

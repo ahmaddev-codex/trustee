@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmActionDialog } from "@/components/confirm-action-dialog";
 import { apiFetch } from "@/lib/api";
 
 export function OrderActions({
@@ -91,13 +92,15 @@ export function OrderActions({
     if (isBuyer) {
       return (
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => requestRefund.mutate()}
-            disabled={requestRefund.isPending}
-          >
-            {requestRefund.isPending ? "Requesting…" : "Request a refund"}
-          </Button>
+          <ConfirmActionDialog
+            trigger="Request a refund"
+            triggerVariant="outline"
+            title="Request a refund?"
+            description="The seller hasn't shipped yet. We'll refund your payment in full — this can't be undone."
+            confirmLabel="Request refund"
+            isPending={requestRefund.isPending}
+            onConfirm={() => requestRefund.mutate()}
+          />
         </div>
       );
     }
@@ -107,9 +110,14 @@ export function OrderActions({
     return (
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => confirmReceipt.mutate()} disabled={confirmReceipt.isPending}>
-            {confirmReceipt.isPending ? "Releasing…" : "Confirm receipt"}
-          </Button>
+          <ConfirmActionDialog
+            trigger={confirmReceipt.isPending ? "Releasing…" : "Confirm receipt"}
+            title="Confirm receipt?"
+            description="This releases the funds to the seller right away. Only confirm once you've checked the item and you're happy with it — this can't be undone."
+            confirmLabel="Confirm & release funds"
+            isPending={confirmReceipt.isPending}
+            onConfirm={() => confirmReceipt.mutate()}
+          />
           <Button variant="outline" onClick={() => setDisputeOpen((v) => !v)}>
             Report a problem
           </Button>

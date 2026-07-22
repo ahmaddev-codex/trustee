@@ -1,19 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { TbCircleCheck, TbArrowLeft } from "react-icons/tb";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
 
@@ -22,15 +18,36 @@ interface Bank {
   code: string;
 }
 
+interface SavedBankDetails {
+  bankAccountNumber: string | null;
+  bankCode: string | null;
+  bankAccountName: string | null;
+}
+
 export default function BankDetailsPage() {
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
+  const [seeded, setSeeded] = useState(false);
 
   const { data: banks, isLoading: loadingBanks } = useQuery({
     queryKey: ["monnify", "banks"],
     queryFn: () => apiFetch<{ banks: Bank[] }>("/api/monnify/banks").then((r) => r.banks),
   });
+
+  const { data: saved } = useQuery({
+    queryKey: ["profile", "bank-details"],
+    queryFn: () => apiFetch<SavedBankDetails>("/api/profile/bank-details"),
+  });
+
+  // Seed the form from the saved account once, the first render after it loads —
+  // React's documented pattern for adjusting state from external data without an effect.
+  if (saved && !seeded) {
+    setSeeded(true);
+    if (saved.bankCode) setBankCode(saved.bankCode);
+    if (saved.bankAccountNumber) setAccountNumber(saved.bankAccountNumber);
+    if (saved.bankAccountName) setVerifiedName(saved.bankAccountName);
+  }
 
   const verify = useMutation({
     mutationFn: () =>
@@ -49,7 +66,15 @@ export default function BankDetailsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10">
+    <div className="mx-auto max-w-md px-4 py-6 sm:px-6 sm:py-8">
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <TbArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <Card>
         <CardHeader>
           <CardTitle className="font-display text-xl">Payout bank account</CardTitle>
@@ -62,22 +87,18 @@ export default function BankDetailsPage() {
 
           <div className="space-y-1.5">
             <Label>Bank</Label>
-            <Select
+            <Combobox
+              options={(banks ?? []).map((bank) => ({ value: bank.code, label: bank.name }))}
               value={bankCode}
-              onValueChange={(value) => setBankCode(value ?? "")}
+              onChange={(value) => {
+                setBankCode(value);
+                setVerifiedName(null);
+              }}
               disabled={loadingBanks}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={loadingBanks ? "Loading banks…" : "Select your bank"} />
-              </SelectTrigger>
-              <SelectContent>
-                {banks?.map((bank) => (
-                  <SelectItem key={bank.code} value={bank.code}>
-                    {bank.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={loadingBanks ? "Loading banks…" : "Select your bank"}
+              searchPlaceholder="Search banks…"
+              emptyText="No banks found."
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -95,8 +116,11 @@ export default function BankDetailsPage() {
           </div>
 
           {verifiedName && (
-            <div className="rounded-lg border bg-accent/50 p-3 text-sm">
-              Verified: <span className="font-medium">{verifiedName}</span>
+            <div className="flex items-start gap-2 rounded-lg border bg-accent/50 p-3 text-sm">
+              <TbCircleCheck className="mt-0.5 size-4 shrink-0 text-brand" />
+              <span>
+                Payout account on file: <span className="font-medium">{verifiedName}</span>
+              </span>
             </div>
           )}
 
@@ -105,7 +129,11 @@ export default function BankDetailsPage() {
             disabled={!bankCode || accountNumber.length !== 10 || verify.isPending}
             onClick={() => verify.mutate()}
           >
-            {verify.isPending ? "Verifying…" : "Verify and save"}
+            {verify.isPending
+              ? "Verifying…"
+              : verifiedName
+                ? "Update bank account"
+                : "Verify and save"}
           </Button>
         </CardContent>
       </Card>
