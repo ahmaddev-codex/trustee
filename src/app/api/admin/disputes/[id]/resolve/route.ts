@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { koboToNairaAmount } from "@/lib/money";
 import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
+import { notify } from "@/lib/notifications";
 
 export async function POST(
   request: Request,
@@ -86,6 +87,29 @@ export async function POST(
         },
       }),
     ]);
+
+    if (isComplete) {
+      const outcome =
+        resolution === "RELEASE"
+          ? "released to the seller"
+          : "refunded to the buyer";
+      await Promise.all([
+        notify({
+          userId: order.buyerId,
+          type: "DISPUTE_RESOLVED",
+          title: "Dispute resolved",
+          body: `The dispute for "${order.listing.title}" was resolved — funds were ${outcome}.`,
+          link: `/orders/${order.id}`,
+        }),
+        notify({
+          userId: order.sellerId,
+          type: "DISPUTE_RESOLVED",
+          title: "Dispute resolved",
+          body: `The dispute for "${order.listing.title}" was resolved — funds were ${outcome}.`,
+          link: `/orders/${order.id}`,
+        }),
+      ]);
+    }
 
     return NextResponse.json({ pendingAuthorization: !isComplete });
   } catch (error) {

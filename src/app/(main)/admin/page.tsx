@@ -3,11 +3,12 @@ import { formatNaira } from "@/lib/money";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthorizeForm } from "./authorize-form";
 import { ResolveDisputeForm } from "./resolve-dispute-form";
+import { ModerateListingForm } from "./moderate-listing-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const [pending, disputes] = await Promise.all([
+  const [pending, disputes, flaggedListings] = await Promise.all([
     prisma.order.findMany({
       where: {
         monnifyDisbursementRef: { not: null },
@@ -25,13 +26,18 @@ export default async function AdminPage() {
       },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.listing.findMany({
+      where: { aiFlagged: true, status: "ACTIVE" },
+      include: { seller: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10 px-4 py-10">
+    <div className="mx-auto max-w-3xl space-y-10 px-4 py-6 sm:px-6 sm:py-8">
       <div>
-        <h1 className="mb-1 font-display text-2xl font-bold tracking-tight">Admin</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Control room</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Payout authorizations and dispute resolution.
         </p>
       </div>
@@ -85,6 +91,34 @@ export default async function AdminPage() {
                     {formatNaira(dispute.order.amountKobo)}
                   </p>
                   <ResolveDisputeForm disputeId={dispute.id} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-lg font-bold">
+          AI-flagged listings ({flaggedListings.length})
+        </h2>
+        {flaggedListings.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nothing flagged for scam signals right now.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {flaggedListings.map((listing) => (
+              <Card key={listing.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">{listing.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Seller: {listing.seller.name} · {formatNaira(listing.priceKobo)}
+                  </p>
+                  <p className="text-sm">{listing.aiFlagReason}</p>
+                  <ModerateListingForm listingId={listing.id} />
                 </CardContent>
               </Card>
             ))}
