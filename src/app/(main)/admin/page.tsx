@@ -8,7 +8,7 @@ import { ModerateListingForm } from "./moderate-listing-form";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const [pending, disputes, flaggedListings] = await Promise.all([
+  const [pending, disputes, flaggedListings, payoutAccounts] = await Promise.all([
     prisma.order.findMany({
       where: {
         monnifyDisbursementRef: { not: null },
@@ -30,6 +30,19 @@ export default async function AdminPage() {
       where: { aiFlagged: true, status: "ACTIVE" },
       include: { seller: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findMany({
+      where: { bankAccountName: { not: null } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        bankAccountName: true,
+        bankAccountNumber: true,
+        bankCode: true,
+      },
+      orderBy: { name: "asc" },
     }),
   ]);
 
@@ -61,6 +74,40 @@ export default async function AdminPage() {
                     {formatNaira(order.amountKobo - order.platformFeeKobo)}
                   </p>
                   <AuthorizeForm reference={order.monnifyDisbursementRef!} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-lg font-bold">
+          Connected payout accounts ({payoutAccounts.length})
+        </h2>
+        {payoutAccounts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No one has connected a payout account yet.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {payoutAccounts.map((user) => (
+              <Card key={user.id}>
+                <CardContent className="flex items-center justify-between gap-3 py-4">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {user.name}{" "}
+                      <span className="font-normal text-muted-foreground">({user.email})</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {user.bankAccountName} · Bank {user.bankCode} · •••• {user.bankAccountNumber?.slice(-4)}
+                    </p>
+                  </div>
+                  {user.role === "ADMIN" && (
+                    <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
+                      Admin
+                    </span>
+                  )}
                 </CardContent>
               </Card>
             ))}

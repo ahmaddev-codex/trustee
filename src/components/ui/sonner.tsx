@@ -10,23 +10,23 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
-      position="top-center"
+      position="top-right"
       className="toaster group"
       icons={{
         success: (
-          <TbCircleCheck className="size-4" />
+          <TbCircleCheck className="size-4 text-green-600 dark:text-green-400" />
         ),
         info: (
-          <TbInfoCircle className="size-4" />
+          <TbInfoCircle className="size-4 text-cyan-600 dark:text-cyan" />
         ),
         warning: (
-          <TbAlertTriangle className="size-4" />
+          <TbAlertTriangle className="size-4 text-amber-500" />
         ),
         error: (
-          <TbOctagon className="size-4" />
+          <TbOctagon className="size-4 text-destructive" />
         ),
         loading: (
-          <TbLoader2 className="size-4 animate-spin" />
+          <TbLoader2 className="size-4 animate-spin text-muted-foreground" />
         ),
       }}
       style={

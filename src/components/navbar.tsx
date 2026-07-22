@@ -30,9 +30,17 @@ export function Navbar() {
           <Link href="/dashboard" className={linkClass} onClick={() => setMobileOpen(false)}>
             Dashboard
           </Link>
-          {session.user.role === "ADMIN" && (
+          {session.user.role === "ADMIN" ? (
             <Link href="/admin" className={linkClass} onClick={() => setMobileOpen(false)}>
               Admin
+            </Link>
+          ) : (
+            <Link
+              href="/profile/bank-details"
+              className={linkClass}
+              onClick={() => setMobileOpen(false)}
+            >
+              Payout details
             </Link>
           )}
         </>

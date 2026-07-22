@@ -43,6 +43,7 @@ export default async function DashboardPage() {
   ]);
 
   const hasPayoutAccount = Boolean(user?.bankAccountName);
+  const isAdmin = session!.user.role === "ADMIN";
 
   const OPEN_ORDER_STATUSES = new Set(["AWAITING_PAYMENT", "FUNDED", "SHIPPED", "DISPUTED"]);
   const stats = [
@@ -59,21 +60,23 @@ export default async function DashboardPage() {
             Your activity
           </h1>
         </div>
-        <Link
-          href="/profile/bank-details"
-          className={`flex items-center gap-1.5 text-sm underline underline-offset-4 ${
-            hasPayoutAccount
-              ? "text-muted-foreground hover:text-foreground"
-              : "font-medium text-destructive"
-          }`}
-        >
-          {hasPayoutAccount ? (
-            <TbCircleCheck className="size-4 shrink-0" />
-          ) : (
-            <TbAlertCircle className="size-4 shrink-0" />
-          )}
-          {hasPayoutAccount ? "Payout details" : "Add payout details"}
-        </Link>
+        {!isAdmin && (
+          <Link
+            href="/profile/bank-details"
+            className={`flex items-center gap-1.5 text-sm font-medium underline underline-offset-4 ${
+              hasPayoutAccount
+                ? "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                : "text-destructive"
+            }`}
+          >
+            {hasPayoutAccount ? (
+              <TbCircleCheck className="size-4 shrink-0" />
+            ) : (
+              <TbAlertCircle className="size-4 shrink-0" />
+            )}
+            {hasPayoutAccount ? "Payout details" : "Add payout details"}
+          </Link>
+        )}
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
