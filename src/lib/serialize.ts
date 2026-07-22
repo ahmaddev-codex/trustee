@@ -1,4 +1,4 @@
-import type { Order } from "@/generated/prisma/client";
+import type { Order } from "@prisma/client";
 
 // NextResponse.json() calls JSON.stringify, which can't serialize BigInt —
 // Prisma's Order model stores amounts as BigInt (kobo), so every route
