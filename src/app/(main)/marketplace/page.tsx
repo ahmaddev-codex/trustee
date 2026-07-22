@@ -59,7 +59,16 @@ export default async function MarketplacePage({
   const minPrice = minPriceNaira ? Number(minPriceNaira) : undefined;
   const maxPrice = maxPriceNaira ? Number(maxPriceNaira) : undefined;
 
-  let listings = [];
+  let listings: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priceKobo: bigint;
+    imageUrls: string[];
+    category: string;
+    status: string;
+    seller: { name: string };
+  }> = [];
   try {
     listings = await prisma.listing.findMany({
       where: {

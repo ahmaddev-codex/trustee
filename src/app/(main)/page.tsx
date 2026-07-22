@@ -44,7 +44,16 @@ const steps: {
 ];
 
 export default async function Home() {
-  let recentListings = [];
+  let recentListings: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priceKobo: bigint;
+    imageUrls: string[];
+    category: string;
+    status: string;
+    seller: { name: string };
+  }> = [];
   try {
     recentListings = await prisma.listing.findMany({
       where: { status: "ACTIVE" },
