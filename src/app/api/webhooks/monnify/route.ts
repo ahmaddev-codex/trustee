@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { isValidWebhookSignature, verifyTransactionByPaymentReference } from "@/lib/monnify";
+import { notify } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
 
   const order = await prisma.order.findUnique({
     where: { monnifyPaymentReference: paymentReference },
+    include: { listing: { select: { title: true } } },
   });
 
   if (!order || order.status !== "AWAITING_PAYMENT") {
@@ -45,6 +47,13 @@ export async function POST(request: Request) {
       await prisma.order.update({
         where: { id: order.id },
         data: { status: "FUNDED", fundedAt: new Date() },
+      });
+      await notify({
+        userId: order.sellerId,
+        type: "ORDER_FUNDED",
+        title: "Your item sold",
+        body: `Payment received for "${order.listing.title}" — mark it shipped when it's on its way.`,
+        link: `/orders/${order.id}`,
       });
     }
   } catch {

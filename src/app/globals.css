@@ -55,8 +55,6 @@
 }
 
 :root {
-  --font-body: "Cabinet Grotesk", ui-sans-serif, system-ui, sans-serif;
-
   --brand: #4334d3;
   --brand-deep: #251377;
   --brand-bright: #7147f6;
@@ -147,6 +145,6 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
   }
 }

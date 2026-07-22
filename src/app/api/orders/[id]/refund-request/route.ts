@@ -6,6 +6,7 @@ import { koboToNairaAmount } from "@/lib/money";
 import { refundEligibleAt } from "@/lib/escrow";
 import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
 import { serializeOrder } from "@/lib/serialize";
+import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(
   _request: Request,
@@ -67,6 +68,30 @@ export async function POST(
         ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
       },
     });
+
+    if (isComplete) {
+      await notify({
+        userId: order.sellerId,
+        type: "REFUND_ISSUED",
+        title: "Buyer refunded",
+        body: `The buyer was refunded for "${order.listing.title}" — you didn't ship in time.`,
+        link: `/orders/${order.id}`,
+      });
+    } else {
+      await notify({
+        userId: order.sellerId,
+        type: "REFUND_PENDING",
+        title: "Buyer requested a refund",
+        body: `A refund for "${order.listing.title}" is pending authorization.`,
+        link: `/orders/${order.id}`,
+      });
+      await notifyAdmins({
+        type: "REFUND_NEEDS_AUTH",
+        title: "Refund needs OTP authorization",
+        body: `Refund for "${order.listing.title}" is pending authorization.`,
+        link: "/admin",
+      });
+    }
 
     return NextResponse.json({ order: serializeOrder(updated), pendingAuthorization: !isComplete });
   } catch (error) {

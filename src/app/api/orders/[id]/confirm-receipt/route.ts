@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { koboToNairaAmount } from "@/lib/money";
 import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
 import { serializeOrder } from "@/lib/serialize";
+import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(
   _request: Request,
@@ -61,6 +62,30 @@ export async function POST(
         ...(isComplete ? { status: "RELEASED", releasedAt: new Date() } : {}),
       },
     });
+
+    if (isComplete) {
+      await notify({
+        userId: order.sellerId,
+        type: "PAYOUT_RELEASED",
+        title: "Payment released to you",
+        body: `Your payout for "${order.listing.title}" has been sent.`,
+        link: `/orders/${order.id}`,
+      });
+    } else {
+      await notify({
+        userId: order.sellerId,
+        type: "PAYOUT_PENDING",
+        title: "Payout pending authorization",
+        body: `Your payout for "${order.listing.title}" is awaiting admin authorization.`,
+        link: `/orders/${order.id}`,
+      });
+      await notifyAdmins({
+        type: "PAYOUT_NEEDS_AUTH",
+        title: "Payout needs OTP authorization",
+        body: `Payout for "${order.listing.title}" is pending authorization.`,
+        link: "/admin",
+      });
+    }
 
     return NextResponse.json({
       order: serializeOrder(updated),

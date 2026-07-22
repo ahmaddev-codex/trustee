@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { autoReleaseDeadline } from "@/lib/escrow";
 import { serializeOrder } from "@/lib/serialize";
+import { notify } from "@/lib/notifications";
 
 export async function POST(_request: Request, ctx: RouteContext<"/api/orders/[id]/ship">) {
   const { id } = await ctx.params;
@@ -13,7 +14,10 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/orders/[id
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const order = await prisma.order.findUnique({ where: { id } });
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { listing: { select: { title: true } } },
+  });
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
@@ -33,6 +37,14 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/orders/[id
       shippedAt,
       autoReleaseAt: autoReleaseDeadline(shippedAt),
     },
+  });
+
+  await notify({
+    userId: order.buyerId,
+    type: "ORDER_SHIPPED",
+    title: "Item shipped",
+    body: `"${order.listing.title}" is on its way — confirm receipt once it arrives.`,
+    link: `/orders/${order.id}`,
   });
 
   return NextResponse.json({ order: serializeOrder(updated) });

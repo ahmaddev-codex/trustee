@@ -7,8 +7,11 @@ import { useForm } from "react-hook-form";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
+import { TbLock } from "react-icons/tb";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
@@ -62,7 +65,7 @@ function LoginForm() {
 
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" {...register("password")} />
+            <PasswordInput id="password" {...register("password")} />
             {errors.password && (
               <p className="text-sm text-destructive">
                 {errors.password.message}
@@ -88,10 +91,27 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="mx-auto flex max-w-sm flex-col justify-center px-4 py-16">
+    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-16">
+      <Link
+        href="/"
+        className="mb-8 flex items-center gap-2 self-start font-display text-lg font-extrabold tracking-tight text-brand-deep dark:text-brand-bright"
+      >
+        <span className="size-2 rounded-full bg-lime" aria-hidden />
+        Trustee
+      </Link>
+
+      <div className="mb-6">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Welcome back</h1>
+      </div>
+
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>
+
+      <div className="mt-4 flex items-center gap-2 border border-border p-3 text-xs text-muted-foreground">
+        <TbLock className="size-4 shrink-0 text-brand" />
+        Every purchase is protected by escrow — sellers only get paid once you confirm receipt.
+      </div>
     </div>
   );
 }

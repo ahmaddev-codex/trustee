@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyAdmins } from "@/lib/notifications";
 
 export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]/dispute">) {
   const { id } = await ctx.params;
@@ -17,7 +18,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
     return NextResponse.json({ error: "Tell us a bit more about the issue" }, { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({ where: { id } });
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { listing: { select: { title: true } } },
+  });
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
@@ -34,6 +38,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
     }),
     prisma.order.update({ where: { id }, data: { status: "DISPUTED" } }),
   ]);
+
+  await notifyAdmins({
+    type: "DISPUTE_RAISED",
+    title: "New dispute raised",
+    body: `A dispute was raised for "${order.listing.title}".`,
+    link: "/admin",
+  });
 
   return NextResponse.json({ success: true });
 }

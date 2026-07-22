@@ -10,6 +10,24 @@ const schema = z.object({
   bankCode: z.string().min(1, "Choose a bank"),
 });
 
+export async function GET() {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { bankAccountNumber: true, bankCode: true, bankAccountName: true },
+  });
+
+  return NextResponse.json({
+    bankAccountNumber: user?.bankAccountNumber ?? null,
+    bankCode: user?.bankCode ?? null,
+    bankAccountName: user?.bankAccountName ?? null,
+  });
+}
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
