@@ -19,86 +19,95 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: { buyer: true, listing: { select: { title: true } } },
-  });
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
-  if (order.buyerId !== session.user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-  if (order.status !== "FUNDED" || !order.fundedAt) {
-    return NextResponse.json({ error: "This order isn't eligible for a refund" }, { status: 409 });
-  }
-  if (new Date() < refundEligibleAt(order.fundedAt)) {
-    return NextResponse.json(
-      { error: "Give the seller a bit more time to ship before requesting a refund" },
-      { status: 409 },
-    );
-  }
-
-  const { buyer } = order;
-  if (!buyer.bankAccountNumber || !buyer.bankCode || !buyer.bankAccountName) {
-    return NextResponse.json(
-      { error: "Add a verified payout account first so we know where to send the refund" },
-      { status: 409 },
-    );
-  }
-
-  const reference = `refund-${order.id}`;
-
   try {
-    const transfer = await initiateSingleTransfer({
-      amount: koboToNairaAmount(order.amountKobo),
-      reference,
-      narration: `Trustee refund — ${order.listing.title}`,
-      destinationBankCode: buyer.bankCode,
-      destinationAccountNumber: buyer.bankAccountNumber,
-      destinationAccountName: buyer.bankAccountName,
-    });
-
-    const isComplete = transfer.status === "SUCCESS" || transfer.status === "COMPLETED";
-
-    const updated = await prisma.order.update({
+    const order = await prisma.order.findUnique({
       where: { id },
-      data: {
-        monnifyDisbursementRef: reference,
-        ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
-      },
+      include: { buyer: true, listing: { select: { title: true } } },
     });
-
-    if (isComplete) {
-      await notify({
-        userId: order.sellerId,
-        type: "REFUND_ISSUED",
-        title: "Buyer refunded",
-        body: `The buyer was refunded for "${order.listing.title}" — you didn't ship in time.`,
-        link: `/orders/${order.id}`,
-      });
-    } else {
-      await notify({
-        userId: order.sellerId,
-        type: "REFUND_PENDING",
-        title: "Buyer requested a refund",
-        body: `A refund for "${order.listing.title}" is pending authorization.`,
-        link: `/orders/${order.id}`,
-      });
-      await notifyAdmins({
-        type: "REFUND_NEEDS_AUTH",
-        title: "Refund needs OTP authorization",
-        body: `Refund for "${order.listing.title}" is pending authorization.`,
-        link: "/admin",
-      });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (order.buyerId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    if (order.status !== "FUNDED" || !order.fundedAt) {
+      return NextResponse.json({ error: "This order isn't eligible for a refund" }, { status: 409 });
+    }
+    if (new Date() < refundEligibleAt(order.fundedAt)) {
+      return NextResponse.json(
+        { error: "Give the seller a bit more time to ship before requesting a refund" },
+        { status: 409 },
+      );
     }
 
-    return NextResponse.json({ order: serializeOrder(updated), pendingAuthorization: !isComplete });
+    const { buyer } = order;
+    if (!buyer.bankAccountNumber || !buyer.bankCode || !buyer.bankAccountName) {
+      return NextResponse.json(
+        { error: "Add a verified payout account first so we know where to send the refund" },
+        { status: 409 },
+      );
+    }
+
+    const reference = `refund-${order.id}`;
+
+    try {
+      const transfer = await initiateSingleTransfer({
+        amount: koboToNairaAmount(order.amountKobo),
+        reference,
+        narration: `Trustee refund — ${order.listing.title}`,
+        destinationBankCode: buyer.bankCode,
+        destinationAccountNumber: buyer.bankAccountNumber,
+        destinationAccountName: buyer.bankAccountName,
+      });
+
+      const isComplete = transfer.status === "SUCCESS" || transfer.status === "COMPLETED";
+
+      const updated = await prisma.order.update({
+        where: { id },
+        data: {
+          monnifyDisbursementRef: reference,
+          ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
+        },
+      });
+
+      if (isComplete) {
+        await notify({
+          userId: order.sellerId,
+          type: "REFUND_ISSUED",
+          title: "Buyer refunded",
+          body: `The buyer was refunded for "${order.listing.title}" — you didn't ship in time.`,
+          link: `/orders/${order.id}`,
+        });
+      } else {
+        await notify({
+          userId: order.sellerId,
+          type: "REFUND_PENDING",
+          title: "Buyer requested a refund",
+          body: `A refund for "${order.listing.title}" is pending authorization.`,
+          link: `/orders/${order.id}`,
+        });
+        await notifyAdmins({
+          type: "REFUND_NEEDS_AUTH",
+          title: "Refund needs OTP authorization",
+          body: `Refund for "${order.listing.title}" is pending authorization.`,
+          link: "/admin",
+        });
+      }
+
+      return NextResponse.json({ order: serializeOrder(updated), pendingAuthorization: !isComplete });
+    } catch (error) {
+      console.error("Failed to initiate refund:", error);
+      const message =
+        error instanceof MonnifyError
+          ? error.message
+          : "Could not start the refund. Please try again.";
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
   } catch (error) {
-    const message =
-      error instanceof MonnifyError
-        ? error.message
-        : "Could not start the refund. Please try again.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    console.error("Failed to request refund:", error);
+    return NextResponse.json(
+      { error: "Failed to request refund. Please try again." },
+      { status: 500 },
+    );
   }
 }

@@ -16,29 +16,38 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const dispute = await prisma.dispute.findUnique({
-    where: { id },
-    include: {
-      order: { include: { listing: { select: { title: true } } } },
-      raisedBy: { select: { id: true } },
-    },
-  });
-  if (!dispute) {
-    return NextResponse.json({ error: "Dispute not found" }, { status: 404 });
-  }
-
   try {
-    const suggestion = await analyzeDispute({
-      listingTitle: dispute.order.listing.title,
-      amountNaira: koboToNairaAmount(dispute.order.amountKobo),
-      raisedByRole: dispute.raisedById === dispute.order.buyerId ? "buyer" : "seller",
-      reason: dispute.reason,
-      fundedAt: dispute.order.fundedAt,
-      shippedAt: dispute.order.shippedAt,
+    const dispute = await prisma.dispute.findUnique({
+      where: { id },
+      include: {
+        order: { include: { listing: { select: { title: true } } } },
+        raisedBy: { select: { id: true } },
+      },
     });
-    return NextResponse.json(suggestion);
+    if (!dispute) {
+      return NextResponse.json({ error: "Dispute not found" }, { status: 404 });
+    }
+
+    try {
+      const suggestion = await analyzeDispute({
+        listingTitle: dispute.order.listing.title,
+        amountNaira: koboToNairaAmount(dispute.order.amountKobo),
+        raisedByRole: dispute.raisedById === dispute.order.buyerId ? "buyer" : "seller",
+        reason: dispute.reason,
+        fundedAt: dispute.order.fundedAt,
+        shippedAt: dispute.order.shippedAt,
+      });
+      return NextResponse.json(suggestion);
+    } catch (error) {
+      console.error("Failed to analyze dispute:", error);
+      const message = error instanceof GroqError ? error.message : "Could not get an AI suggestion";
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
   } catch (error) {
-    const message = error instanceof GroqError ? error.message : "Could not get an AI suggestion";
-    return NextResponse.json({ error: message }, { status: 502 });
+    console.error("Failed to load dispute for analysis:", error);
+    return NextResponse.json(
+      { error: "Could not get an AI suggestion. Please try again." },
+      { status: 500 },
+    );
   }
 }

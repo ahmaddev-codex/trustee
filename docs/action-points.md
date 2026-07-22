@@ -34,7 +34,7 @@ Manual steps only you can complete — these can't be automated from code.
   `SUPABASE_STORAGE_BUCKET` to match) with public read access, since listing
   photo URLs are rendered directly in `<Image>` with `unoptimized` — no
   signed URLs.
-- [ ] For production, point `DATABASE_URL` at the same Supabase project's
+- [x] For production, point `DATABASE_URL` at the same Supabase project's
   Postgres connection string (pooled connection recommended) instead of the
   local Docker instance.
 

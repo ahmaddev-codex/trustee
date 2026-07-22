@@ -20,18 +20,26 @@ export async function POST(
     return NextResponse.json({ error: "action must be DISMISS or REMOVE" }, { status: 400 });
   }
 
-  const listing = await prisma.listing.findUnique({ where: { id } });
-  if (!listing) {
-    return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+  try {
+    const listing = await prisma.listing.findUnique({ where: { id } });
+    if (!listing) {
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+    }
+
+    await prisma.listing.update({
+      where: { id },
+      data:
+        action === "DISMISS"
+          ? { aiFlagged: false, aiFlagReason: null }
+          : { status: "REMOVED", aiFlagged: false, aiFlagReason: null },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to moderate listing:", error);
+    return NextResponse.json(
+      { error: "Failed to moderate listing. Please try again." },
+      { status: 500 },
+    );
   }
-
-  await prisma.listing.update({
-    where: { id },
-    data:
-      action === "DISMISS"
-        ? { aiFlagged: false, aiFlagReason: null }
-        : { status: "REMOVED", aiFlagged: false, aiFlagReason: null },
-  });
-
-  return NextResponse.json({ ok: true });
 }

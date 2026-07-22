@@ -16,16 +16,24 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { bankAccountNumber: true, bankCode: true, bankAccountName: true },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { bankAccountNumber: true, bankCode: true, bankAccountName: true },
+    });
 
-  return NextResponse.json({
-    bankAccountNumber: user?.bankAccountNumber ?? null,
-    bankCode: user?.bankCode ?? null,
-    bankAccountName: user?.bankAccountName ?? null,
-  });
+    return NextResponse.json({
+      bankAccountNumber: user?.bankAccountNumber ?? null,
+      bankCode: user?.bankCode ?? null,
+      bankAccountName: user?.bankAccountName ?? null,
+    });
+  } catch (error) {
+    console.error("Failed to fetch bank details:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch bank details. Please try again." },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -60,6 +68,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ accountName });
   } catch (error) {
+    console.error("Failed to save bank details:", error);
     const message =
       error instanceof MonnifyError ? error.message : "Could not verify that account";
     return NextResponse.json({ error: message }, { status: 400 });

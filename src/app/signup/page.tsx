@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ import { TbLock } from "react-icons/tb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { signupSchema, type SignupInput } from "@/lib/validations/auth";
@@ -24,8 +25,11 @@ export default function SignupPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<SignupInput>({ resolver: zodResolver(signupSchema) });
+
+  const password = useWatch({ control, name: "password" }) ?? "";
 
   const onSubmit = async (values: SignupInput) => {
     setSubmitting(true);
@@ -35,9 +39,9 @@ export default function SignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      const body = await res.json();
+      const body = await res.json().catch(() => null);
       if (!res.ok) {
-        toast.error(body.error ?? "Could not create account");
+        toast.error(body?.error ?? "Could not create account");
         return;
       }
 
@@ -55,6 +59,9 @@ export default function SignupPage() {
 
       router.push("/dashboard");
       router.refresh();
+    } catch (error) {
+      console.error("Signup failed:", error);
+      toast.error("Could not create account. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -104,6 +111,7 @@ export default function SignupPage() {
                   {errors.password.message}
                 </p>
               )}
+              <PasswordStrengthMeter password={password} />
             </div>
 
             <Button type="submit" className="w-full" disabled={submitting}>
