@@ -55,6 +55,7 @@ model User {
   buyerOrders       Order[]      @relation("BuyerOrders")
   sellerOrders      Order[]      @relation("SellerOrders")
   disputesRaised    Dispute[]
+  notifications     Notification[]
 
   @@map("users")
 }
@@ -70,6 +71,9 @@ model Listing {
   imageUrls   String[]
   category    String
   status      ListingStatus @default(ACTIVE)
+
+  aiFlagged     Boolean @default(false)
+  aiFlagReason  String?
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -135,6 +139,24 @@ model Dispute {
   updatedAt DateTime @updatedAt
 
   @@map("disputes")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  type      String
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@map("notifications")
 }
 
 model WebhookEvent {
