@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createListingSchema } from "@/lib/validations/listing";
 import { nairaToKobo } from "@/lib/money";
+import { screenListing } from "@/lib/groq";
+import { notifyAdmins } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -23,7 +25,7 @@ export async function POST(request: Request) {
 
   const { title, description, priceNaira, category, imageUrls } = parsed.data;
 
-  const listing = await prisma.listing.create({
+  let listing = await prisma.listing.create({
     data: {
       sellerId: session.user.id,
       title,
@@ -33,6 +35,24 @@ export async function POST(request: Request) {
       imageUrls,
     },
   });
+
+  try {
+    const screen = await screenListing({ title, description, priceNaira, category });
+    if (screen.flagged) {
+      listing = await prisma.listing.update({
+        where: { id: listing.id },
+        data: { aiFlagged: true, aiFlagReason: screen.reason },
+      });
+      await notifyAdmins({
+        type: "LISTING_FLAGGED",
+        title: "Listing flagged for review",
+        body: `"${title}" was flagged: ${screen.reason ?? "possible scam signal"}`,
+        link: "/admin",
+      });
+    }
+  } catch (error) {
+    console.error("Listing scam-screen failed, leaving listing unflagged", error);
+  }
 
   return NextResponse.json(
     { listing: { ...listing, priceKobo: listing.priceKobo.toString() } },

@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import { TbArrowLeft } from "react-icons/tb";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatNaira } from "@/lib/money";
+import { computePlatformFeeKobo } from "@/lib/fees";
 import { Badge } from "@/components/ui/badge";
 import { BuyButton } from "./buy-button";
 
@@ -16,7 +19,7 @@ export default async function ListingDetailPage({
 
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { seller: { select: { id: true, name: true } } },
+    include: { seller: { select: { id: true, name: true, createdAt: true } } },
   });
 
   if (!listing) notFound();
@@ -25,7 +28,15 @@ export default async function ListingDetailPage({
   const isOwnListing = session?.user?.id === listing.sellerId;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+      <Link
+        href="/marketplace"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <TbArrowLeft className="size-4" />
+        Back to Marketplace
+      </Link>
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {listing.imageUrls.map((url, i) => (
           <div key={i} className="relative aspect-square overflow-hidden rounded-lg border">
@@ -39,12 +50,9 @@ export default async function ListingDetailPage({
           <Badge variant="secondary" className="mb-2">
             {listing.category}
           </Badge>
-          <h1 className="font-display text-2xl font-bold tracking-tight">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight">
             {listing.title}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sold by {listing.seller.name}
-          </p>
         </div>
         <div className="text-2xl font-bold whitespace-nowrap">
           {formatNaira(listing.priceKobo)}
@@ -55,7 +63,18 @@ export default async function ListingDetailPage({
         {listing.description}
       </p>
 
-      <div className="mt-8 rounded-2xl border bg-accent/40 p-5">
+      <div className="mt-6 flex items-center justify-between border border-border p-4 text-sm">
+        <span className="font-medium">{listing.seller.name}</span>
+        <span className="text-muted-foreground">
+          Member since{" "}
+          {listing.seller.createdAt.toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })}
+        </span>
+      </div>
+
+      <div className="mt-6 rounded-2xl border bg-accent/40 p-5">
         {listing.status !== "ACTIVE" ? (
           <p className="text-sm text-muted-foreground">
             This listing is no longer available.
@@ -65,7 +84,12 @@ export default async function ListingDetailPage({
             This is your own listing.
           </p>
         ) : (
-          <BuyButton listingId={listing.id} isAuthed={!!session?.user} />
+          <BuyButton
+            listingId={listing.id}
+            isAuthed={!!session?.user}
+            itemPriceLabel={formatNaira(listing.priceKobo)}
+            platformFeeLabel={formatNaira(computePlatformFeeKobo(listing.priceKobo))}
+          />
         )}
       </div>
     </div>
