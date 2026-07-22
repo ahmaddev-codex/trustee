@@ -32,6 +32,11 @@ Status markers: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] Refund flow (seller never ships within grace period)
 - [x] Seller/buyer bank-details page with live Name Enquiry verification
 
+## AI assist (Groq)
+- [x] `src/lib/groq.ts` — thin wrapper around Groq's chat-completions API (JSON-mode)
+- [x] Dispute-resolution suggestion: admin can request an AI take (RELEASE/REFUND/UNCLEAR + reasoning) on `/admin` before resolving a dispute — advisory only, admin still clicks the final action
+- [x] Scam-signal listing screening: new listings are screened at creation time (best-effort, never blocks creation on a Groq failure); flagged listings surface in a `/admin` review queue with dismiss/remove actions
+
 ## Submission polish
 - [ ] Final README walkthrough + demo script
 - [ ] Screenshots/recording for the submission writeup

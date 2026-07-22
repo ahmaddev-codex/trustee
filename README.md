@@ -52,7 +52,19 @@ Buying from informal listings (Jiji/Marketplace-style) carries real scam risk: p
    pnpm exec prisma migrate dev
    ```
 
-5. **Start the app**
+5. **Seed the admin account**
+
+   ```bash
+   pnpm seed
+   ```
+
+   Creates (or promotes) an admin user so you can reach `/admin`. Defaults to
+   `admin@trustee.dev` / `AdminPassword123!` — override with `ADMIN_EMAIL`,
+   `ADMIN_PASSWORD`, `ADMIN_NAME` in `.env` first if you want different
+   credentials. Re-running it against an existing email just promotes that
+   account to `ADMIN` without touching its password.
+
+6. **Start the app**
 
    ```bash
    pnpm dev

@@ -10,7 +10,7 @@ Manual steps only you can complete — these can't be automated from code.
   `/api/v2/disbursements/single` call is reachable and validates fields
   correctly, but your current API key's JWT scopes have no disbursement
   authority — payouts will fail until this is enabled.
-- [ ] **Get your Monnify Wallet Account Number** from the dashboard
+- [x] **Get your Monnify Wallet Account Number** from the dashboard
   (Settlement/Wallet section) and set it as `MONNIFY_WALLET_ACCOUNT_NUMBER`
   in `.env`. This is required as `sourceAccountNumber` on every disbursement
   call — confirmed live (`sourceAccountNumber must not be blank` without it).
@@ -28,9 +28,9 @@ Manual steps only you can complete — these can't be automated from code.
 
 ## Supabase (blocking listing photo upload)
 
-- [ ] Create a Supabase project, then set `SUPABASE_URL` and
+- [x] Create a Supabase project, then set `SUPABASE_URL` and
   `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
-- [ ] Create a public Storage bucket named `listing-photos` (or update
+- [x] Create a public Storage bucket named `listing-photos` (or update
   `SUPABASE_STORAGE_BUCKET` to match) with public read access, since listing
   photo URLs are rendered directly in `<Image>` with `unoptimized` — no
   signed URLs.
