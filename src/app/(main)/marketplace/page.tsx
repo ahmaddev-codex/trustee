@@ -1,12 +1,13 @@
 import Link from "next/link";
-import Image from "next/image";
-import { TbShoppingBagSearch, TbPhoto } from "react-icons/tb";
+import { TbShoppingBagSearch, TbPhoto, TbPlus } from "react-icons/tb";
 
 import { prisma } from "@/lib/prisma";
 import { formatNaira, nairaToKobo } from "@/lib/money";
 import { listingCategories } from "@/lib/validations/listing";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import { MarketplaceFilters } from "./marketplace-filters";
 
 export const dynamic = "force-dynamic";
@@ -79,6 +80,8 @@ export default async function MarketplacePage({
               OR: [
                 { title: { contains: q, mode: "insensitive" } },
                 { description: { contains: q, mode: "insensitive" } },
+                { category: { contains: q, mode: "insensitive" } },
+                { seller: { name: { contains: q, mode: "insensitive" } } },
               ],
             }
           : {}),
@@ -105,16 +108,25 @@ export default async function MarketplacePage({
   const hasFilters = Boolean(q || activeCategory || minPriceNaira || maxPriceNaira);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-8">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      <div className="mb-8 flex items-center justify-between gap-4">
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
           Browse listings
         </h1>
+        <Button render={<Link href="/sell/new" />}>
+          <TbPlus data-icon="inline-start" className="size-4" />
+          List an item
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
-        <aside className="space-y-6">
+        <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <MarketplaceFilters
+            // Remounts fresh whenever the URL's filters change instead of
+            // reusing the same instance — that's what keeps the uncontrolled
+            // search/price inputs and the sort select from going stale (e.g.
+            // still showing old values right after "Clear all filters").
+            key={`${q}|${minPriceNaira ?? ""}|${maxPriceNaira ?? ""}|${sort}|${activeCategory ?? ""}`}
             q={q}
             minPrice={minPriceNaira}
             maxPrice={maxPriceNaira}
@@ -197,13 +209,7 @@ export default async function MarketplacePage({
                   <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
                     <div className="relative aspect-square bg-muted">
                       {listing.imageUrls[0] ? (
-                        <Image
-                          src={listing.imageUrls[0]}
-                          alt={listing.title}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
+                        <ImageWithSkeleton src={listing.imageUrls[0]} alt={listing.title} />
                       ) : (
                         <div className="flex h-full items-center justify-center">
                           <TbPhoto className="size-8 text-muted-foreground/40" />
