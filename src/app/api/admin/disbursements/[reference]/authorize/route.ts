@@ -64,6 +64,11 @@ export async function POST(
             resolvedAt: new Date(),
           },
         }),
+        // If this transfer refunds the buyer, the sale fell through — put the
+        // listing back on the market.
+        ...(targetStatus === "REFUNDED"
+          ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "ACTIVE" as const } })]
+          : []),
       ]);
 
       return NextResponse.json({ order: serializeOrder(updated) });

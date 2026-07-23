@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { koboToNairaAmount } from "@/lib/money";
-import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
+import { MonnifyError } from "@/lib/monnify";
+import { releaseFundsToSeller } from "@/lib/release";
 import { serializeOrder } from "@/lib/serialize";
-import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(
   _request: Request,
@@ -33,65 +32,19 @@ export async function POST(
       return NextResponse.json({ error: "This order isn't ready to release" }, { status: 409 });
     }
 
-    const { seller } = order;
-    if (!seller.bankAccountNumber || !seller.bankCode || !seller.bankAccountName) {
+    if (!order.seller.bankAccountNumber || !order.seller.bankCode || !order.seller.bankAccountName) {
       return NextResponse.json(
         { error: "The seller hasn't added a verified payout account yet" },
         { status: 409 },
       );
     }
 
-    const payoutKobo = order.amountKobo - order.platformFeeKobo;
-    const reference = `payout-${order.id}`;
-
     try {
-      const transfer = await initiateSingleTransfer({
-        amount: koboToNairaAmount(payoutKobo),
-        reference,
-        narration: `Trustee payout — ${order.listing.title}`,
-        destinationBankCode: seller.bankCode,
-        destinationAccountNumber: seller.bankAccountNumber,
-        destinationAccountName: seller.bankAccountName,
-      });
-
-      const isComplete = transfer.status === "SUCCESS" || transfer.status === "COMPLETED";
-
-      const updated = await prisma.order.update({
-        where: { id },
-        data: {
-          monnifyDisbursementRef: reference,
-          ...(isComplete ? { status: "RELEASED", releasedAt: new Date() } : {}),
-        },
-      });
-
-      if (isComplete) {
-        await notify({
-          userId: order.sellerId,
-          type: "PAYOUT_RELEASED",
-          title: "Payment released to you",
-          body: `Your payout for "${order.listing.title}" has been sent.`,
-          link: `/orders/${order.id}`,
-        });
-      } else {
-        await notify({
-          userId: order.sellerId,
-          type: "PAYOUT_PENDING",
-          title: "Payout pending authorization",
-          body: `Your payout for "${order.listing.title}" is awaiting admin authorization.`,
-          link: `/orders/${order.id}`,
-        });
-        await notifyAdmins({
-          type: "PAYOUT_NEEDS_AUTH",
-          title: "Payout needs OTP authorization",
-          body: `Payout for "${order.listing.title}" is pending authorization.`,
-          link: "/admin",
-        });
-      }
-
+      const result = await releaseFundsToSeller(order);
       return NextResponse.json({
-        order: serializeOrder(updated),
-        transferStatus: transfer.status,
-        pendingAuthorization: !isComplete,
+        order: serializeOrder(result.order),
+        transferStatus: result.transferStatus,
+        pendingAuthorization: result.pendingAuthorization,
       });
     } catch (error) {
       console.error("Failed to initiate payout:", error);

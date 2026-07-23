@@ -1,19 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TbSearch } from "react-icons/tb";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const sortOptions = [
   { value: "newest", label: "Newest first" },
   { value: "price_asc", label: "Price: low to high" },
   { value: "price_desc", label: "Price: high to low" },
 ] as const;
-
-const selectClass =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function MarketplaceFilters({
   q,
@@ -31,6 +36,11 @@ export function MarketplaceFilters({
   hasFilters: boolean;
 }) {
   const router = useRouter();
+  // Controlled so the trigger's displayed label always matches the current
+  // sort — the rest of the form stays uncontrolled, but this component is
+  // remounted (via `key` in the parent) whenever the URL's filters change, so
+  // this still starts fresh instead of going stale after "Clear filters".
+  const [sortValue, setSortValue] = useState(sort);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -74,13 +84,19 @@ export function MarketplaceFilters({
         <p className="mb-1.5 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
           Sort by
         </p>
-        <select name="sort" defaultValue={sort} className={selectClass}>
-          {sortOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <input type="hidden" name="sort" value={sortValue} />
+        <Select value={sortValue} onValueChange={(value) => setSortValue(value ?? "newest")}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {category && <input type="hidden" name="category" value={category} />}
@@ -89,13 +105,15 @@ export function MarketplaceFilters({
         Apply filters
       </Button>
       {hasFilters && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full text-muted-foreground"
           onClick={() => router.push("/marketplace")}
-          className="block w-full text-center text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
         >
           Clear all filters
-        </button>
+        </Button>
       )}
     </form>
   );
