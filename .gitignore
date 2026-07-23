@@ -45,3 +45,6 @@ next-env.d.ts
 
 # local-only seed/utility scripts
 /scripts
+
+# working notes, not meant for shared history
+/docs
