@@ -38,6 +38,17 @@ Manual steps only you can complete — these can't be automated from code.
   Postgres connection string (pooled connection recommended) instead of the
   local Docker instance.
 
+## Resend (blocking password-reset emails)
+
+- [ ] **Create a free Resend account** at https://resend.com and generate an
+  API key, then set `RESEND_API_KEY` in `.env`. Until this is set, "Forgot
+  password" still works end-to-end (token issued, stored, expires correctly)
+  but the email never actually sends — check the server logs for "Failed to
+  send password reset email" if a user reports not receiving one.
+- [ ] The default `EMAIL_FROM` (`onboarding@resend.dev`) works immediately
+  with no domain setup — only change it if you verify your own sending
+  domain in the Resend dashboard.
+
 ## Nice-to-haves, not blocking
 
 - Monnify has an official MCP server (`docs/integration/mcp-server`) that

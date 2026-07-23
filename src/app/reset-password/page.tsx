@@ -3,101 +3,101 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { signIn } from "next-auth/react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-
 import { TbLock } from "react-icons/tb";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { loginSchema, type LoginInput } from "@/lib/validations/auth";
+import { apiFetch, ApiError } from "@/lib/api";
+import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validations/auth";
 import { zodResolver } from "@/lib/zod-resolver";
 
-function LoginForm() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const token = searchParams.get("token") ?? "";
   const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
-  } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
+  } = useForm<ResetPasswordInput>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: { token },
+  });
 
-  const onSubmit = async (values: LoginInput) => {
+  const password = useWatch({ control, name: "password" }) ?? "";
+
+  const onSubmit = async (values: ResetPasswordInput) => {
     setSubmitting(true);
     try {
-      const result = await signIn("credentials", {
-        ...values,
-        redirect: false,
+      await apiFetch("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify(values),
       });
-
-      if (result?.error) {
-        toast.error("Invalid email or password");
-        return;
-      }
-
-      router.push(searchParams.get("callbackUrl") ?? "/dashboard");
-      router.refresh();
+      toast.success("Password updated — log in with your new password");
+      router.push("/login");
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Could not reset your password.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (!token) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Invalid link</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            This reset link is missing its token.{" "}
+            <Link href="/forgot-password" className="underline underline-offset-4">
+              Request a new one
+            </Link>
+            .
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Log in</CardTitle>
+        <CardTitle>Choose a new password</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+          <input type="hidden" {...register("token")} />
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register("email")} />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <Label htmlFor="password">New password</Label>
             <PasswordInput id="password" {...register("password")} />
             {errors.password && (
-              <p className="text-sm text-destructive">
-                {errors.password.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
+            <PasswordStrengthMeter password={password} />
           </div>
 
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Logging in…" : "Log in"}
+            {submitting ? "Updating…" : "Update password"}
           </Button>
         </form>
-
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="underline underline-offset-4">
-            Sign up
-          </Link>
-        </p>
       </CardContent>
     </Card>
   );
 }
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-16">
       <Link
@@ -109,11 +109,11 @@ export default function LoginPage() {
       </Link>
 
       <div className="mb-6">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Welcome back</h1>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Reset password</h1>
       </div>
 
       <Suspense fallback={null}>
-        <LoginForm />
+        <ResetPasswordForm />
       </Suspense>
 
       <div className="mt-4 flex items-center gap-2 border border-border p-3 text-xs text-muted-foreground">
