@@ -1,6 +1,6 @@
 # Trustee
 
-Escrow for P2P classifieds, powered by [Monnify](https://developers.monnify.com/). A buyer's payment is held in escrow until they confirm the item arrived — the seller is only paid out once the buyer is satisfied.
+Escrow for P2P classifieds Marketplace, powered by [Monnify](https://developers.monnify.com/). A buyer's payment is held in escrow until they confirm the item arrived — the seller is only paid out once the buyer is satisfied.
 
 Built for the Monnify Developer Challenge.
 
