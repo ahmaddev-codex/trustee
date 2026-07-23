@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { formatNaira } from "@/lib/money";
 import { verifyTransactionByPaymentReference } from "@/lib/monnify";
 import { autoReleaseDeadline, refundEligibleAt } from "@/lib/escrow";
+import { releaseFundsToSeller } from "@/lib/release";
 import { orderStatusCopy, autoReleaseNote, refundEligibleNote } from "@/lib/status";
 import { notify } from "@/lib/notifications";
 import { Badge } from "@/components/ui/badge";
@@ -80,10 +81,49 @@ export default async function OrderDetailPage({
     }
   }
 
+  // Same belt-and-suspenders pattern as above: if the buyer never confirms or
+  // disputes, whoever next opens this page past the auto-release deadline
+  // triggers the payout automatically instead of the funds sitting in escrow
+  // forever.
+  if (
+    order.status === "SHIPPED" &&
+    order.autoReleaseAt &&
+    new Date() >= order.autoReleaseAt
+  ) {
+    try {
+      const releasable = await prisma.order.findUnique({
+        where: { id: order.id },
+        include: { seller: true, listing: { select: { title: true } } },
+      });
+      if (
+        releasable &&
+        releasable.status === "SHIPPED" &&
+        releasable.seller.bankAccountNumber &&
+        releasable.seller.bankCode &&
+        releasable.seller.bankAccountName
+      ) {
+        await releaseFundsToSeller(releasable);
+        order = await prisma.order.findUnique({
+          where: { id },
+          include: {
+            listing: { select: { title: true, imageUrls: true } },
+            buyer: { select: { id: true, name: true } },
+            seller: { select: { id: true, name: true } },
+          },
+        });
+      }
+    } catch {
+      // Monnify unreachable, disbursements not enabled yet, or seller has no
+      // payout account — the buyer can still confirm manually once resolved.
+    }
+  }
+
+  if (!order) notFound();
+
   const copy = statusCopy[order.status] ?? { label: order.status, description: "" };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
       <Link
         href="/dashboard"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

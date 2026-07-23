@@ -44,7 +44,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
       type: "DISPUTE_RAISED",
       title: "New dispute raised",
       body: `A dispute was raised for "${order.listing.title}".`,
-      link: "/admin",
+      link: "/dashboard?tab=disputes",
     });
 
     return NextResponse.json({ success: true });

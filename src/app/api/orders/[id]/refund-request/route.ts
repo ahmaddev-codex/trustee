@@ -62,13 +62,19 @@ export async function POST(
 
       const isComplete = transfer.status === "SUCCESS" || transfer.status === "COMPLETED";
 
-      const updated = await prisma.order.update({
-        where: { id },
-        data: {
-          monnifyDisbursementRef: reference,
-          ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
-        },
-      });
+      const [updated] = await prisma.$transaction([
+        prisma.order.update({
+          where: { id },
+          data: {
+            monnifyDisbursementRef: reference,
+            ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
+          },
+        }),
+        // The sale fell through — put the listing back on the market.
+        ...(isComplete
+          ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "ACTIVE" } })]
+          : []),
+      ]);
 
       if (isComplete) {
         await notify({
@@ -90,7 +96,7 @@ export async function POST(
           type: "REFUND_NEEDS_AUTH",
           title: "Refund needs OTP authorization",
           body: `Refund for "${order.listing.title}" is pending authorization.`,
-          link: "/admin",
+          link: "/dashboard?tab=payouts",
         });
       }
 

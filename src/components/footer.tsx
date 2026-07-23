@@ -6,7 +6,7 @@ import { listingCategories } from "@/lib/validations/listing";
 export function Footer() {
   return (
     <footer className="mt-auto border-t bg-[var(--brand-deep)] text-white/70">
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-12 text-sm sm:grid-cols-3 sm:px-6">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-12 text-sm sm:grid-cols-3">
         <div>
           <Link
             href="/"
@@ -64,7 +64,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-white/50 sm:flex-row sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-white/50 sm:flex-row">
           <p>&copy; {new Date().getFullYear()} Trustee. Escrow for classifieds.</p>
 
           <Link
@@ -73,7 +73,6 @@ export function Footer() {
             rel="noopener noreferrer"
             className="flex items-center gap-2 transition-opacity hover:opacity-80"
           >
-            <span>Built during</span>
             <Image
               src="/apiconf26.png"
               alt="APIConf Lagos 2026"

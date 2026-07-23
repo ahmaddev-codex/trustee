@@ -55,8 +55,27 @@ model User {
   sellerOrders      Order[]      @relation("SellerOrders")
   disputesRaised    Dispute[]
   notifications     Notification[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+
+  // SHA-256 hash of the raw token mailed to the user — never store the raw
+  // token, so a DB read alone can't be used to reset someone's password.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Listing {

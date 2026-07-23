@@ -8,7 +8,9 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "seed:demo": "tsx scripts/seed-demo.js",
+    "seed:prod": "tsx scripts/seed-prod.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

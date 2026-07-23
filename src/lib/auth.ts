@@ -38,10 +38,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user }) => {
+    jwt: async ({ token, user, trigger, session }) => {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+      }
+      // Lets the settings form push a fresh name into the session immediately
+      // (via useSession().update()) instead of waiting for the next re-login.
+      if (trigger === "update" && session?.name) {
+        token.name = session.name;
       }
       return token;
     },

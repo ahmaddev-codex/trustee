@@ -170,7 +170,7 @@ export default function SignupPage() {
           </DialogHeader>
           <div className="flex flex-col gap-2 pt-2">
             <Button onClick={() => goTo("/sell/new")}>Start listing products</Button>
-            <Button variant="outline" onClick={() => goTo("/profile/bank-details")}>
+            <Button variant="outline" onClick={() => goTo("/dashboard?tab=payout")}>
               Connect payout details
             </Button>
             <Button variant="ghost" onClick={() => goTo("/dashboard")}>

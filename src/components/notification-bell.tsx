@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiFetch } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 
 type Notification = {
   id: string;
@@ -30,7 +31,7 @@ export function NotificationBell() {
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
-    queryKey: ["notifications"],
+    queryKey: queryKeys.notifications.all(),
     queryFn: () =>
       apiFetch<{ notifications: Notification[]; unreadCount: number }>("/api/notifications"),
     enabled: status === "authenticated",
@@ -39,13 +40,13 @@ export function NotificationBell() {
 
   const markRead = useMutation({
     mutationFn: (id: string) => apiFetch(`/api/notifications/${id}/read`, { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() }),
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update notification"),
   });
 
   const markAllRead = useMutation({
     mutationFn: () => apiFetch("/api/notifications/read-all", { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() }),
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not mark notifications as read"),
   });
 

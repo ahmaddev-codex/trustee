@@ -87,6 +87,11 @@ export async function POST(
               : {}),
           },
         }),
+        // If the resolution is a refund, the sale fell through — put the
+        // listing back on the market.
+        ...(isComplete && targetStatus === "REFUNDED"
+          ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "ACTIVE" as const } })]
+          : []),
       ]);
 
       if (isComplete) {
