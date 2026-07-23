@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { TbLock, TbShieldCheck, TbShieldExclamation, TbPhoto, TbArrowRight } from "react-icons/tb";
 
 import { prisma } from "@/lib/prisma";
@@ -7,6 +6,7 @@ import { formatNaira } from "@/lib/money";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ImageWithSkeleton } from "@/components/image-with-skeleton";
 import {
   EscrowFlowIcon,
   ShipFlowIcon,
@@ -68,12 +68,12 @@ export default async function Home() {
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-[linear-gradient(160deg,var(--brand-deep),var(--brand)_65%,var(--brand-bright))] px-4 py-14 text-white sm:px-6 sm:py-20">
+      <section className="relative overflow-hidden bg-[linear-gradient(160deg,var(--brand-deep),var(--brand)_65%,var(--brand-bright))] px-4 py-14 text-white sm:py-20">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(225,239,154,0.18),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(144,234,242,0.16),transparent_50%)]"
         />
-        <div className="relative mx-auto flex max-w-5xl flex-col items-start gap-6">
+        <div className="relative mx-auto flex max-w-6xl flex-col items-start gap-6">
           <Badge className="rounded-full border-white/20 bg-white/10 text-white">
             Escrow for classifieds
           </Badge>
@@ -120,8 +120,8 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="how-it-works" className="border-t border-border bg-muted/30 px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-5xl">
+      <section id="how-it-works" className="border-t border-border bg-muted/30 px-4 py-14 sm:py-20">
+        <div className="mx-auto max-w-6xl">
           <h2 className="max-w-2xl font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
             Money only moves when trust is earned.
           </h2>
@@ -152,7 +152,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="listings" className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+      <section id="listings" className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-display text-xl font-bold tracking-tight">
             Recently listed
@@ -181,13 +181,7 @@ export default async function Home() {
                 <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
                   <div className="relative aspect-square bg-muted">
                     {listing.imageUrls[0] ? (
-                      <Image
-                        src={listing.imageUrls[0]}
-                        alt={listing.title}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
+                      <ImageWithSkeleton src={listing.imageUrls[0]} alt={listing.title} />
                     ) : (
                       <div className="flex h-full items-center justify-center">
                         <TbPhoto className="size-8 text-muted-foreground/40" />
