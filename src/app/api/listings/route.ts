@@ -48,7 +48,7 @@ export async function POST(request: Request) {
           type: "LISTING_FLAGGED",
           title: "Listing flagged for review",
           body: `"${title}" was flagged: ${screen.reason ?? "possible scam signal"}`,
-          link: "/admin",
+          link: "/dashboard?tab=flagged",
         });
       }
     } catch (error) {

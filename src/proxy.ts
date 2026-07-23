@@ -5,12 +5,6 @@ import { auth } from "@/lib/auth";
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isAuthed = !!req.auth;
-  const isAdmin = req.auth?.user?.role === "ADMIN";
-
-  if (pathname.startsWith("/admin") && !isAdmin) {
-    const url = isAuthed ? "/" : "/login";
-    return NextResponse.redirect(new URL(url, req.url));
-  }
 
   const protectedPrefixes = ["/dashboard", "/sell", "/orders", "/profile"];
   if (!isAuthed && protectedPrefixes.some((p) => pathname.startsWith(p))) {
