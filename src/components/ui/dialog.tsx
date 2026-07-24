@@ -30,6 +30,12 @@ function DialogOverlay({
   return (
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
+      // Base UI skips rendering a nested dialog's own backdrop by default
+      // (it assumes the outer dialog's backdrop is enough) — but that means
+      // a dialog opened on top of another dialog (e.g. a confirm dialog
+      // triggered from within a listing modal) shows no dimming/blur behind
+      // it at all. Force it so every dialog gets its own backdrop.
+      forceRender
       className={cn(
         "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
