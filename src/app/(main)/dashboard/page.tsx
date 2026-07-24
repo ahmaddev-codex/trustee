@@ -26,8 +26,27 @@ import { SettingsForm } from "./settings-form";
 export const dynamic = "force-dynamic";
 
 const OPEN_ORDER_STATUSES = ["AWAITING_PAYMENT", "FUNDED", "SHIPPED", "DISPUTED"] as const;
+// Money that has actually moved (paid in) but hasn't been resolved either
+// way yet — released to the seller or refunded to the buyer.
+const IN_ESCROW_STATUSES = ["FUNDED", "SHIPPED", "DISPUTED"] as const;
 const ADMIN_TABS = ["payouts", "disputes", "flagged", "settings"] as const;
-const USER_TABS = ["listings", "buying", "selling", "transactions", "payout", "settings"] as const;
+const USER_TABS = [
+  "listings",
+  "buying",
+  "selling",
+  "transactions",
+  "escrow",
+  "payout",
+  "settings",
+] as const;
+
+const RANGE_OPTIONS = [
+  { value: "all", label: "All time" },
+  { value: "1m", label: "1 month" },
+  { value: "3m", label: "3 months" },
+  { value: "6m", label: "6 months" },
+  { value: "1y", label: "1 year" },
+] as const;
 
 export default async function DashboardPage({
   searchParams,
@@ -40,6 +59,12 @@ export default async function DashboardPage({
   const params = await searchParams;
   const q = (typeof params.q === "string" ? params.q : "").trim();
   const rawTab = typeof params.tab === "string" ? params.tab : undefined;
+  const rawRange = typeof params.range === "string" ? params.range : undefined;
+  const range = (RANGE_OPTIONS as readonly { value: string; label: string }[]).some(
+    (r) => r.value === rawRange,
+  )
+    ? (rawRange as (typeof RANGE_OPTIONS)[number]["value"])
+    : "all";
 
   // Admins run escrow operations, not buy/sell — they get an entirely
   // different set of tabs and never touch the listings/buying/selling queries.
@@ -66,6 +91,7 @@ export default async function DashboardPage({
       userId={session!.user.id}
       q={q}
       tab={tab}
+      range={range}
       name={session!.user.name ?? ""}
       email={session!.user.email ?? ""}
       image={session!.user.image ?? null}
@@ -407,6 +433,7 @@ async function UserDashboard({
   userId,
   q,
   tab,
+  range,
   name,
   email,
   image,
@@ -414,11 +441,16 @@ async function UserDashboard({
   userId: string;
   q: string;
   tab: (typeof USER_TABS)[number];
+  range: (typeof RANGE_OPTIONS)[number]["value"];
   name: string;
   email: string;
   image: string | null;
 }) {
   const titleFilter = q ? { contains: q, mode: "insensitive" as const } : undefined;
+  const rangeMonths = { all: null, "1m": 1, "3m": 3, "6m": 6, "1y": 12 }[range];
+  const rangeCutoff = rangeMonths
+    ? new Date(new Date().setMonth(new Date().getMonth() - rangeMonths))
+    : null;
 
   const [
     listings,
@@ -428,6 +460,9 @@ async function UserDashboard({
     activeListingsCount,
     openPurchasesCount,
     openSalesCount,
+    received,
+    buyerEscrow,
+    sellerEscrow,
   ] = await Promise.all([
     prisma.listing.findMany({
       where: { sellerId: userId, ...(titleFilter ? { title: titleFilter } : {}) },
@@ -444,15 +479,34 @@ async function UserDashboard({
       include: { listing: { select: { title: true, imageUrls: true } } },
     }),
     prisma.user.findUnique({ where: { id: userId }, select: { bankAccountName: true } }),
-    // Stats always reflect everything, regardless of the current search —
-    // otherwise "Active listings: 1" while searching would misleadingly read
-    // as your whole inventory rather than just what matched.
+  
     prisma.listing.count({ where: { sellerId: userId, status: "ACTIVE" } }),
     prisma.order.count({ where: { buyerId: userId, status: { in: [...OPEN_ORDER_STATUSES] } } }),
     prisma.order.count({ where: { sellerId: userId, status: { in: [...OPEN_ORDER_STATUSES] } } }),
+    // In sales: money that has actually landed in your bank from released
+    // sales, net of the platform fee — not what's still sitting in escrow
+    // mid-order, and not netted against anything you've spent as a buyer.
+    prisma.order.aggregate({
+      where: { sellerId: userId, status: "RELEASED" },
+      _sum: { amountKobo: true, platformFeeKobo: true },
+    }),
+    // Escrow: money that's been paid in but not yet resolved either way.
+    prisma.order.aggregate({
+      where: { buyerId: userId, status: { in: [...IN_ESCROW_STATUSES] } },
+      _sum: { amountKobo: true },
+    }),
+    prisma.order.aggregate({
+      where: { sellerId: userId, status: { in: [...IN_ESCROW_STATUSES] } },
+      _sum: { amountKobo: true, platformFeeKobo: true },
+    }),
   ]);
 
   const hasPayoutAccount = Boolean(user?.bankAccountName);
+  const inSalesKobo = (received._sum.amountKobo ?? 0n) - (received._sum.platformFeeKobo ?? 0n);
+  const escrowKobo =
+    (buyerEscrow._sum.amountKobo ?? 0n) +
+    (sellerEscrow._sum.amountKobo ?? 0n) -
+    (sellerEscrow._sum.platformFeeKobo ?? 0n);
 
   // One chronological ledger across both roles — a purchase is money out
   // (the full item price), a sale is money in (price minus the platform
@@ -476,12 +530,48 @@ async function UserDashboard({
       amountKobo: order.amountKobo - order.platformFeeKobo,
       status: order.status,
     })),
+  ]
+    .filter((t) => !rangeCutoff || t.date >= rangeCutoff)
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  // Same idea, but only the orders where money is still parked in escrow —
+  // paid in, not yet released to the seller or refunded to the buyer.
+  const inEscrow = [
+    ...buying
+      .filter((order) => (IN_ESCROW_STATUSES as readonly string[]).includes(order.status))
+      .map((order) => ({
+        id: order.id,
+        title: order.listing.title,
+        imageUrl: order.listing.imageUrls[0],
+        role: "Bought" as const,
+        date: order.fundedAt ?? order.createdAt,
+        amountKobo: order.amountKobo,
+        status: order.status,
+      })),
+    ...selling
+      .filter((order) => (IN_ESCROW_STATUSES as readonly string[]).includes(order.status))
+      .map((order) => ({
+        id: order.id,
+        title: order.listing.title,
+        imageUrl: order.listing.imageUrls[0],
+        role: "Sold" as const,
+        date: order.fundedAt ?? order.createdAt,
+        amountKobo: order.amountKobo - order.platformFeeKobo,
+        status: order.status,
+      })),
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const stats = [
-    { label: "Active listings", value: activeListingsCount },
-    { label: "Open purchases", value: openPurchasesCount },
-    { label: "Open sales", value: openSalesCount },
+    {
+      label: "In sales",
+      value: (
+        <span className="text-green-600 dark:text-green-400">{formatNaira(inSalesKobo)}</span>
+      ) as React.ReactNode,
+    },
+    { label: "In escrow", value: formatNaira(escrowKobo) as React.ReactNode },
+    { label: "Active listings", value: activeListingsCount as React.ReactNode },
+    { label: "Open purchases", value: openPurchasesCount as React.ReactNode },
+    { label: "Open sales", value: openSalesCount as React.ReactNode },
   ];
 
   return (
@@ -494,7 +584,7 @@ async function UserDashboard({
         <DashboardSearch key={q} q={q} />
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
+      <div className="mb-8 grid grid-cols-2 gap-px overflow-hidden border border-border bg-border sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-background p-4">
             <p className="font-display text-2xl font-extrabold">{stat.value}</p>
@@ -511,6 +601,7 @@ async function UserDashboard({
           <TabsTrigger value="buying">Buying</TabsTrigger>
           <TabsTrigger value="selling">Selling</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="escrow">Escrow</TabsTrigger>
           <TabsTrigger value="payout">
             {hasPayoutAccount ? (
               <TbCircleCheck className="size-3.5 text-green-600 dark:text-green-400" />
@@ -618,19 +709,81 @@ async function UserDashboard({
           )}
         </TabsContent>
 
-        <TabsContent value="transactions" className="divide-y divide-border pt-4">
-          {transactions.length === 0 ? (
-            q ? (
-              <EmptyState message={`No transactions match "${q}".`} href="/dashboard" cta="Clear search" />
+        <TabsContent value="transactions" className="pt-4">
+          <div className="mb-4 flex flex-wrap gap-2">
+            {RANGE_OPTIONS.map((opt) => (
+              <Link
+                key={opt.value}
+                href={`/dashboard?tab=transactions&range=${opt.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  range === opt.value
+                    ? "border-transparent bg-accent text-accent-foreground"
+                    : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="divide-y divide-border">
+            {transactions.length === 0 ? (
+              q ? (
+                <EmptyState message={`No transactions match "${q}".`} href="/dashboard" cta="Clear search" />
+              ) : (
+                <EmptyState
+                  message={
+                    rangeCutoff ? "No transactions in this period." : "No transactions yet."
+                  }
+                  href="/marketplace"
+                  cta="Browse listings"
+                />
+              )
             ) : (
-              <EmptyState
-                message="No transactions yet."
-                href="/marketplace"
-                cta="Browse listings"
-              />
+              transactions.map((t) => (
+                <Link key={`${t.role}-${t.id}`} href={`/orders/${t.id}`} className="block">
+                  <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
+                    <div className="flex items-center gap-3">
+                      <Thumbnail src={t.imageUrl} alt={t.title} />
+                      <div>
+                        <p className="font-medium">{t.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t.role} ·{" "}
+                          {t.date.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={`font-display text-sm font-bold ${
+                          t.amountKobo < 0n ? "text-destructive" : "text-green-600 dark:text-green-400"
+                        }`}
+                      >
+                        {t.amountKobo < 0n ? "" : "+"}
+                        {formatNaira(t.amountKobo)}
+                      </p>
+                      <Badge variant="secondary">{orderStatusCopy[t.status]?.label ?? t.status}</Badge>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="escrow" className="divide-y divide-border pt-4">
+          {inEscrow.length === 0 ? (
+            q ? (
+              <EmptyState message={`No orders in escrow match "${q}".`} href="/dashboard" cta="Clear search" />
+            ) : (
+              <EmptyState message="Nothing in escrow right now." href="/marketplace" cta="Browse listings" />
             )
           ) : (
-            transactions.map((t) => (
+            inEscrow.map((t) => (
               <Link key={`${t.role}-${t.id}`} href={`/orders/${t.id}`} className="block">
                 <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
                   <div className="flex items-center gap-3">
@@ -638,22 +791,18 @@ async function UserDashboard({
                     <div>
                       <p className="font-medium">{t.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {t.role} · {t.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {t.role} · Held since{" "}
+                        {t.date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p
-                      className={`font-display text-sm font-bold ${
-                        t.amountKobo < 0n ? "text-destructive" : "text-green-600 dark:text-green-400"
-                      }`}
-                    >
-                      {t.amountKobo < 0n ? "" : "+"}
-                      {formatNaira(t.amountKobo)}
-                    </p>
-                    <Badge variant="secondary">
-                      {orderStatusCopy[t.status]?.label ?? t.status}
-                    </Badge>
+                    <p className="font-display text-sm font-bold">{formatNaira(t.amountKobo)}</p>
+                    <Badge variant="secondary">{orderStatusCopy[t.status]?.label ?? t.status}</Badge>
                   </div>
                 </div>
               </Link>
