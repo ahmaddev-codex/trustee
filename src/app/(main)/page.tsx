@@ -148,6 +148,7 @@ export default async function Home() {
             alt=""
             fill
             priority
+            sizes="(min-width: 1024px) 54vw, (min-width: 640px) 62vw, 70vw"
             className="object-cover object-[75%_30%]"
           />
           <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(37,19,119,0.35),rgba(67,52,211,0.15)_60%)] mix-blend-multiply" />
@@ -299,6 +300,7 @@ export default async function Home() {
                   alt=""
                   fill
                   unoptimized
+                  sizes="(min-width: 1024px) 350px, (min-width: 640px) 33vw, 50vw"
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />

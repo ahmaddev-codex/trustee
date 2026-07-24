@@ -195,6 +195,7 @@ export default function NewListingPage() {
                         src={URL.createObjectURL(file)}
                         alt=""
                         fill
+                        sizes="64px"
                         className="object-cover"
                         unoptimized
                       />

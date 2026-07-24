@@ -58,7 +58,8 @@ Buying from informal listings (Jiji/Marketplace-style) carries real scam risk: p
    pnpm seed
    ```
 
-   Creates (or promotes) an admin user so you can reach `/admin`. Defaults to
+   Creates (or promotes) an admin user so you can reach the admin tabs on
+   `/dashboard`. Defaults to
    `admin@trustee.dev` / `AdminPassword123!` — override with `ADMIN_EMAIL`,
    `ADMIN_PASSWORD`, `ADMIN_NAME` in `.env` first if you want different
    credentials. Re-running it against an existing email just promotes that
@@ -94,14 +95,14 @@ non-production environments accordingly.
 1. **Sign up twice** — once as a seller, once as a buyer (two browsers/incognito windows, or two accounts).
 2. **Seller**: add a payout bank account at `/profile/bank-details` — it's verified live against Monnify's Name Enquiry API before saving.
 3. **Seller**: create a listing at `/sell/new` with a photo.
-4. **Buyer**: open the listing and click **Buy — pay into escrow**. You're redirected to Monnify's hosted checkout.
+4. **Buyer**: open the listing and click **Buy now** (or add it to the cart and check out). You're redirected to Monnify's hosted checkout.
 5. **Sandbox payment**: on the checkout page, switch to *Pay with Transfer* and use the [Monnify Bank Simulator](https://websim.sdk.monnify.com/?#/bankingapp) to complete the transfer for the exact amount shown.
-6. Back on Trustee, the order flips to **Funds in escrow** (via webhook, or the redirect-back page's own Verify Transaction fallback if the webhook hasn't arrived yet).
+6. Back on Trustee (redirected to `/orders/[id]`, or `/cart/checkout-success` for a cart checkout), the order flips to **Funds in escrow** (via webhook, or the redirect-back page's own Verify Transaction fallback if the webhook hasn't arrived yet).
 7. **Seller**: marks the order **Shipped** from the order page.
 8. **Buyer**: clicks **Confirm receipt** — this triggers the Monnify disbursement to the seller's verified account.
-   - If Monnify's MFA/OTP is enabled on the account (the default), the transfer shows up on `/admin` waiting for the OTP emailed to the account owner. Paste it in to authorize — the order then flips to **Released**.
+   - If Monnify's MFA/OTP is enabled on the account (the default), the transfer shows up on the **Payouts** tab of `/dashboard` (visible to admin users) waiting for the OTP emailed to the account owner. Paste it in to authorize — the order then flips to **Released**.
    - See [`docs/action-points.md`](docs/action-points.md) for the one-time Monnify account setup (enabling disbursements, wallet account number) needed before this step works.
-9. **Disputes**: instead of confirming, the buyer can **Report a problem** — this opens the order to an admin, who resolves it from `/admin` by releasing to the seller or refunding the buyer.
+9. **Disputes**: instead of confirming, the buyer can **Report a problem** — this opens the order to an admin, who resolves it from the **Disputes** tab of `/dashboard` by releasing to the seller or refunding the buyer.
 
 ## Project docs
 
