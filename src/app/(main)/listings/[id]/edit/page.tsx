@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { koboToNairaAmount } from "@/lib/money";
 import { EditListingForm } from "./edit-listing-form";
+import { PageContainer } from "@/components/page-container";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +23,13 @@ export default async function EditListingPage({ params }: PageProps<"/listings/[
   if (listing.status === "SOLD") redirect(`/listings/${id}`);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <Link
-        href={`/listings/${id}`}
+        href="/dashboard?tab=listings"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <TbArrowLeft className="size-4" />
-        Back to listing
+        Back to listings
       </Link>
 
       <div className="mb-6">
@@ -47,6 +48,6 @@ export default async function EditListingPage({ params }: PageProps<"/listings/[
           imageUrls: listing.imageUrls,
         }}
       />
-    </div>
+    </PageContainer>
   );
 }
