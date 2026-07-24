@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { BrandLoader } from "@/components/brand-loader";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { zodResolver } from "@/lib/zod-resolver";
 
-function LoginForm() {
+function LoginForm({ onRedirecting }: { onRedirecting: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +42,7 @@ function LoginForm() {
         return;
       }
 
+      onRedirecting();
       router.push(searchParams.get("callbackUrl") ?? "/dashboard");
       router.refresh();
     } finally {
@@ -95,6 +97,12 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const [redirecting, setRedirecting] = useState(false);
+
+  if (redirecting) {
+    return <BrandLoader message="Logging you in…" />;
+  }
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-16">
       <Link
@@ -110,7 +118,7 @@ export default function LoginPage() {
       </div>
 
       <Suspense fallback={null}>
-        <LoginForm />
+        <LoginForm onRedirecting={() => setRedirecting(true)} />
       </Suspense>
 
       <div className="mt-4 flex items-center gap-2 border border-border p-3 text-xs text-muted-foreground">

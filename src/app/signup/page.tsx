@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { BrandLoader } from "@/components/brand-loader";
 import { signupSchema, type SignupInput } from "@/lib/validations/auth";
 import { zodResolver } from "@/lib/zod-resolver";
 
@@ -91,6 +92,10 @@ export default function SignupPage() {
     router.push(path);
   };
 
+  if (submitting) {
+    return <BrandLoader message="Creating your account…" />;
+  }
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-16">
       <Link
@@ -135,8 +140,8 @@ export default function SignupPage() {
               <PasswordStrengthMeter password={password} />
             </div>
 
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Creating account…" : "Sign up"}
+            <Button type="submit" className="w-full">
+              Sign up
             </Button>
           </form>
 
