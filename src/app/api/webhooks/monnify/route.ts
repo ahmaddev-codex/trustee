@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { isValidWebhookSignature, verifyTransactionByPaymentReference } from "@/lib/monnify";
-import { notify } from "@/lib/notifications";
+import { isValidWebhookSignature } from "@/lib/monnify";
+import { fundOrdersByPaymentReference } from "@/lib/fund-orders";
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -40,33 +40,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const order = await prisma.order.findUnique({
-      where: { monnifyPaymentReference: paymentReference },
-      include: { listing: { select: { title: true } } },
-    });
-
-    if (!order || order.status !== "AWAITING_PAYMENT") {
-      return NextResponse.json({ received: true });
-    }
-
     try {
-      const verified = await verifyTransactionByPaymentReference(paymentReference);
-      if (verified.paymentStatus === "PAID") {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: "FUNDED", fundedAt: new Date() },
-        });
-        await notify({
-          userId: order.sellerId,
-          type: "ORDER_FUNDED",
-          title: "Your item sold",
-          body: `Payment received for "${order.listing.title}" — mark it shipped when it's on its way.`,
-          link: `/orders/${order.id}`,
-        });
-      }
+      await fundOrdersByPaymentReference(paymentReference);
     } catch (error) {
       console.error("Failed to verify Monnify transaction from webhook:", error);
-      // Webhook will retry, or the order page's manual verify fallback will catch it.
+      // Webhook will retry, or the order/cart page's manual verify fallback will catch it.
     }
 
     return NextResponse.json({ received: true });

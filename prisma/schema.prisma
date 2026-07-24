@@ -42,6 +42,7 @@ model User {
   email             String   @unique
   passwordHash      String
   role              Role     @default(USER)
+  image             String?
 
   bankAccountNumber String?
   bankCode          String?
@@ -56,8 +57,24 @@ model User {
   disputesRaised    Dispute[]
   notifications     Notification[]
   passwordResetTokens PasswordResetToken[]
+  cartItems         CartItem[]
 
   @@map("users")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@map("cart_items")
 }
 
 model PasswordResetToken {
@@ -97,6 +114,7 @@ model Listing {
   updatedAt   DateTime      @updatedAt
 
   orders      Order[]
+  cartItems   CartItem[]
 
   @@index([status])
   @@map("listings")
@@ -118,7 +136,10 @@ model Order {
   platformFeeKobo BigInt
   status          OrderStatus @default(AWAITING_PAYMENT)
 
-  monnifyPaymentReference    String  @unique
+  // Not unique: a cart checkout shares one reference across several orders
+  // (one per seller). A single-item purchase still gets a globally-unique
+  // reference in practice (trustee-${order.id}) since order IDs are unique.
+  monnifyPaymentReference    String
   monnifyTransactionRef      String?
   monnifyDisbursementRef     String?
 
@@ -136,6 +157,7 @@ model Order {
   @@index([status])
   @@index([buyerId])
   @@index([sellerId])
+  @@index([monnifyPaymentReference])
   @@map("orders")
 }
 
