@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { TbTrash } from "react-icons/tb";
@@ -15,6 +16,7 @@ import { formatNaira } from "@/lib/money";
 import type { CartResponse } from "@/lib/cart-types";
 
 export function CartItemsList() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const initialized = useRef(false);
@@ -56,7 +58,7 @@ export function CartItemsList() {
         body: JSON.stringify({ listingIds }),
       }),
     onSuccess: (data) => {
-      window.location.href = data.checkoutUrl;
+      router.push(`/checkout-redirect?url=${encodeURIComponent(data.checkoutUrl)}`);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Could not start checkout");

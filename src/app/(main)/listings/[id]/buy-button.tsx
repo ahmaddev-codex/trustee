@@ -28,7 +28,7 @@ export function BuyButton({
         body: JSON.stringify({ listingId }),
       }),
     onSuccess: (data) => {
-      window.location.href = data.checkoutUrl;
+      router.push(`/checkout-redirect?url=${encodeURIComponent(data.checkoutUrl)}`);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Could not start checkout");
