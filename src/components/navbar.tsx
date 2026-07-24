@@ -12,6 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/notification-bell";
 import { CartButton } from "@/components/cart-button";
 import { PageContainer } from "@/components/page-container";
+import { BrandLoader } from "@/components/brand-loader";
 import { listingCategories } from "@/lib/validations/listing";
 import { CategoryIcon } from "@/lib/category-icons";
 
@@ -22,6 +23,7 @@ export function Navbar() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
 
   const goToMarketplace = (params: Record<string, string>) => {
     setMobileOpen(false);
@@ -78,7 +80,14 @@ export function Navbar() {
       <>
         <CartButton />
         <NotificationBell />
-        <Button variant="destructive" size="sm" onClick={() => signOut({ callbackUrl: "/marketplace" })}>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            setSigningOut(true);
+            signOut({ callbackUrl: "/marketplace" });
+          }}
+        >
           Sign out
         </Button>
         <Avatar>
@@ -100,6 +109,14 @@ export function Navbar() {
         </Button>
       </>
     );
+
+  if (signingOut) {
+    return (
+      <div className="fixed inset-0 z-[100]">
+        <BrandLoader message="Signing you out…" />
+      </div>
+    );
+  }
 
   return (
     <header className="border-b">
