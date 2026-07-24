@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notifications";
 
 export async function POST(
   request: Request,
@@ -33,6 +34,24 @@ export async function POST(
           ? { aiFlagged: false, aiFlagReason: null }
           : { status: "REMOVED", aiFlagged: false, aiFlagReason: null },
     });
+
+    if (action === "REMOVE") {
+      await notify({
+        userId: listing.sellerId,
+        type: "LISTING_REMOVED",
+        title: "Your listing was removed",
+        body: `"${listing.title}" was taken down by a Trustee admin after review.`,
+        link: "/dashboard",
+      });
+    } else {
+      await notify({
+        userId: listing.sellerId,
+        type: "LISTING_CLEARED",
+        title: "Your listing passed review",
+        body: `"${listing.title}" was reviewed and is live as normal.`,
+        link: `/listings/${listing.id}`,
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

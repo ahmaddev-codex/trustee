@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { koboToNairaAmount } from "@/lib/money";
 import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
-import { notify } from "@/lib/notifications";
+import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(
   request: Request,
@@ -113,6 +113,29 @@ export async function POST(
             title: "Dispute resolved",
             body: `The dispute for "${order.listing.title}" was resolved — funds were ${outcome}.`,
             link: `/orders/${order.id}`,
+          }),
+        ]);
+      } else {
+        await Promise.all([
+          notify({
+            userId: order.buyerId,
+            type: "DISPUTE_RESOLUTION_PENDING",
+            title: "Dispute resolution pending authorization",
+            body: `The resolution for "${order.listing.title}" is pending admin authorization.`,
+            link: `/orders/${order.id}`,
+          }),
+          notify({
+            userId: order.sellerId,
+            type: "DISPUTE_RESOLUTION_PENDING",
+            title: "Dispute resolution pending authorization",
+            body: `The resolution for "${order.listing.title}" is pending admin authorization.`,
+            link: `/orders/${order.id}`,
+          }),
+          notifyAdmins({
+            type: "DISPUTE_RESOLUTION_NEEDS_AUTH",
+            title: "Dispute resolution needs OTP authorization",
+            body: `Resolving the dispute for "${order.listing.title}" is pending authorization.`,
+            link: "/dashboard?tab=payouts",
           }),
         ]);
       }

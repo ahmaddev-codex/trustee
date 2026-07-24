@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { authorizeSingleTransfer, MonnifyError } from "@/lib/monnify";
 import { serializeOrder } from "@/lib/serialize";
+import { notify } from "@/lib/notifications";
 
 export async function POST(
   request: Request,
@@ -25,6 +26,7 @@ export async function POST(
   try {
     const order = await prisma.order.findFirst({
       where: { monnifyDisbursementRef: reference },
+      include: { listing: { select: { title: true } } },
     });
     if (!order) {
       return NextResponse.json({ error: "No order matches this disbursement" }, { status: 404 });
@@ -70,6 +72,46 @@ export async function POST(
           ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "ACTIVE" as const } })]
           : []),
       ]);
+
+      // This transfer was left pending OTP authorization earlier — whoever was
+      // told to expect it (the beneficiary, plus both sides if a dispute
+      // resolution was waiting on it) needs to hear that it actually landed.
+      const isDispute = reference.startsWith("dispute-");
+      if (targetStatus === "RELEASED") {
+        await notify({
+          userId: order.sellerId,
+          type: "PAYOUT_RELEASED",
+          title: "Payment released to you",
+          body: `Your payout for "${order.listing.title}" has been sent.`,
+          link: `/orders/${order.id}`,
+        });
+        if (isDispute) {
+          await notify({
+            userId: order.buyerId,
+            type: "DISPUTE_RESOLVED",
+            title: "Dispute resolved",
+            body: `The dispute for "${order.listing.title}" was resolved — funds were released to the seller.`,
+            link: `/orders/${order.id}`,
+          });
+        }
+      } else {
+        await notify({
+          userId: order.buyerId,
+          type: "REFUND_ISSUED",
+          title: "Refund sent",
+          body: `Your refund for "${order.listing.title}" has been sent.`,
+          link: `/orders/${order.id}`,
+        });
+        await notify({
+          userId: order.sellerId,
+          type: isDispute ? "DISPUTE_RESOLVED" : "REFUND_ISSUED",
+          title: isDispute ? "Dispute resolved" : "Buyer refunded",
+          body: isDispute
+            ? `The dispute for "${order.listing.title}" was resolved — funds were refunded to the buyer.`
+            : `The buyer was refunded for "${order.listing.title}".`,
+          link: `/orders/${order.id}`,
+        });
+      }
 
       return NextResponse.json({ order: serializeOrder(updated) });
     } catch (error) {
