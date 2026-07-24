@@ -2,11 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { listingCategories } from "@/lib/validations/listing";
+import { CategoryIcon } from "@/lib/category-icons";
+import { PageContainer } from "@/components/page-container";
 
 export function Footer() {
   return (
     <footer className="mt-auto border-t bg-[var(--brand-deep)] text-white/70">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-12 text-sm sm:grid-cols-3">
+      <PageContainer className="grid grid-cols-1 gap-8 py-12 text-sm sm:grid-cols-3">
         <div>
           <Link
             href="/"
@@ -53,18 +55,19 @@ export function Footer() {
               <li key={c}>
                 <Link
                   href={`/marketplace?category=${encodeURIComponent(c)}`}
-                  className="hover:text-white"
+                  className="flex items-center gap-1.5 hover:text-white"
                 >
+                  <CategoryIcon category={c} className="size-4" />
                   {c}
                 </Link>
               </li>
             ))}
           </ul>
         </div>
-      </div>
+      </PageContainer>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-white/50 sm:flex-row">
+        <PageContainer className="flex flex-col items-center justify-between gap-3 py-4 text-xs text-white/50 sm:flex-row">
           <p>&copy; {new Date().getFullYear()} Trustee. Escrow for classifieds.</p>
 
           <Link
@@ -81,7 +84,7 @@ export function Footer() {
               className="h-6 w-auto"
             />
           </Link>
-        </div>
+        </PageContainer>
       </div>
     </footer>
   );

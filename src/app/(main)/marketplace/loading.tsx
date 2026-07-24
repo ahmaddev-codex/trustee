@@ -1,6 +1,8 @@
+import { PageContainer } from "@/components/page-container";
+
 export default function Loading() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <div className="mb-8 flex items-center justify-between gap-4">
         <div className="h-9 w-56 animate-pulse rounded bg-muted" />
         <div className="h-10 w-32 animate-pulse rounded-full bg-muted" />
@@ -35,6 +37,6 @@ export default function Loading() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
