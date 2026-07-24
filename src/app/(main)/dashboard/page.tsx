@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
+import { PageContainer } from "@/components/page-container";
 import { DashboardSearch } from "./dashboard-search";
 import { AdminSearchForm } from "./admin-search-form";
 import { AuthorizeForm } from "./authorize-form";
@@ -52,6 +53,7 @@ export default async function DashboardPage({
         tab={tab}
         name={session!.user.name ?? ""}
         email={session!.user.email ?? ""}
+        image={session!.user.image ?? null}
       />
     );
   }
@@ -66,6 +68,7 @@ export default async function DashboardPage({
       tab={tab}
       name={session!.user.name ?? ""}
       email={session!.user.email ?? ""}
+      image={session!.user.image ?? null}
     />
   );
 }
@@ -75,11 +78,13 @@ async function AdminDashboard({
   tab,
   name,
   email,
+  image,
 }: {
   q: string;
   tab: (typeof ADMIN_TABS)[number];
   name: string;
   email: string;
+  image: string | null;
 }) {
   const [
     pending,
@@ -169,7 +174,7 @@ async function AdminDashboard({
     matchedUsers.length > 0 || matchedListings.length > 0 || matchedOrders.length > 0;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <div className="mb-6">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Your activity</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -217,7 +222,11 @@ async function AdminDashboard({
                   </p>
                   <div className="space-y-2">
                     {matchedListings.map((listing) => (
-                      <Link key={listing.id} href={`/listings/${listing.id}`}>
+                      // A plain <a> forces a full navigation to the standalone listing
+                      // page — a <Link> here gets caught by the marketplace's
+                      // intercepting (.)listings modal route, which we don't want
+                      // when navigating from the dashboard.
+                      <a key={listing.id} href={`/listings/${listing.id}`}>
                         <Card className="transition-shadow hover:shadow-md">
                           <CardContent className="flex items-center justify-between gap-3 py-3">
                             <p className="text-sm">
@@ -229,7 +238,7 @@ async function AdminDashboard({
                             <Badge variant="secondary">{listing.status}</Badge>
                           </CardContent>
                         </Card>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -387,10 +396,10 @@ async function AdminDashboard({
         </TabsContent>
 
         <TabsContent value="settings" className="pt-4">
-          <SettingsForm name={name} email={email} />
+          <SettingsForm name={name} email={email} image={image} />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -400,12 +409,14 @@ async function UserDashboard({
   tab,
   name,
   email,
+  image,
 }: {
   userId: string;
   q: string;
   tab: (typeof USER_TABS)[number];
   name: string;
   email: string;
+  image: string | null;
 }) {
   const titleFilter = q ? { contains: q, mode: "insensitive" as const } : undefined;
 
@@ -450,7 +461,7 @@ async function UserDashboard({
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <div className="mb-6">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Your activity</h1>
       </div>
@@ -486,7 +497,7 @@ async function UserDashboard({
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="listings" className="space-y-3 pt-4">
+        <TabsContent value="listings" className="divide-y divide-border pt-4">
           {listings.length === 0 ? (
             q ? (
               <EmptyState message={`No listings match "${q}".`} href="/dashboard" cta="Clear search" />
@@ -499,29 +510,28 @@ async function UserDashboard({
             )
           ) : (
             listings.map((listing) => (
-              <Link key={listing.id} href={`/listings/${listing.id}`}>
-                <Card className="transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-center justify-between gap-3 py-4">
-                    <div className="flex items-center gap-3">
-                      <Thumbnail src={listing.imageUrls[0]} alt={listing.title} />
-                      <div>
-                        <p className="font-medium">{listing.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatNaira(listing.priceKobo)}
-                        </p>
-                      </div>
+              // Plain <a>, not <Link> — see note on the admin search results above.
+              <a key={listing.id} href={`/listings/${listing.id}`} className="block">
+                <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
+                  <div className="flex items-center gap-3">
+                    <Thumbnail src={listing.imageUrls[0]} alt={listing.title} />
+                    <div>
+                      <p className="font-medium">{listing.title}</p>
+                      <p className="font-display text-sm text-muted-foreground">
+                        {formatNaira(listing.priceKobo)}
+                      </p>
                     </div>
-                    <Badge variant="secondary">
-                      {listingStatusLabel[listing.status] ?? listing.status}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </div>
+                  <Badge variant="secondary">
+                    {listingStatusLabel[listing.status] ?? listing.status}
+                  </Badge>
+                </div>
+              </a>
             ))
           )}
         </TabsContent>
 
-        <TabsContent value="buying" className="space-y-3 pt-4">
+        <TabsContent value="buying" className="divide-y divide-border pt-4">
           {buying.length === 0 ? (
             q ? (
               <EmptyState message={`No purchases match "${q}".`} href="/dashboard" cta="Clear search" />
@@ -534,29 +544,27 @@ async function UserDashboard({
             )
           ) : (
             buying.map((order) => (
-              <Link key={order.id} href={`/orders/${order.id}`}>
-                <Card className="transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-center justify-between gap-3 py-4">
-                    <div className="flex items-center gap-3">
-                      <Thumbnail src={order.listing.imageUrls[0]} alt={order.listing.title} />
-                      <div>
-                        <p className="font-medium">{order.listing.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatNaira(order.amountKobo)}
-                        </p>
-                      </div>
+              <Link key={order.id} href={`/orders/${order.id}`} className="block">
+                <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
+                  <div className="flex items-center gap-3">
+                    <Thumbnail src={order.listing.imageUrls[0]} alt={order.listing.title} />
+                    <div>
+                      <p className="font-medium">{order.listing.title}</p>
+                      <p className="font-display text-sm text-muted-foreground">
+                        {formatNaira(order.amountKobo)}
+                      </p>
                     </div>
-                    <Badge variant="secondary">
-                      {orderStatusCopy[order.status]?.label ?? order.status}
-                    </Badge>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <Badge variant="secondary">
+                    {orderStatusCopy[order.status]?.label ?? order.status}
+                  </Badge>
+                </div>
               </Link>
             ))
           )}
         </TabsContent>
 
-        <TabsContent value="selling" className="space-y-3 pt-4">
+        <TabsContent value="selling" className="divide-y divide-border pt-4">
           {selling.length === 0 ? (
             q ? (
               <EmptyState message={`No sales match "${q}".`} href="/dashboard" cta="Clear search" />
@@ -565,23 +573,21 @@ async function UserDashboard({
             )
           ) : (
             selling.map((order) => (
-              <Link key={order.id} href={`/orders/${order.id}`}>
-                <Card className="transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-center justify-between gap-3 py-4">
-                    <div className="flex items-center gap-3">
-                      <Thumbnail src={order.listing.imageUrls[0]} alt={order.listing.title} />
-                      <div>
-                        <p className="font-medium">{order.listing.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatNaira(order.amountKobo)}
-                        </p>
-                      </div>
+              <Link key={order.id} href={`/orders/${order.id}`} className="block">
+                <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
+                  <div className="flex items-center gap-3">
+                    <Thumbnail src={order.listing.imageUrls[0]} alt={order.listing.title} />
+                    <div>
+                      <p className="font-medium">{order.listing.title}</p>
+                      <p className="font-display text-sm text-muted-foreground">
+                        {formatNaira(order.amountKobo)}
+                      </p>
                     </div>
-                    <Badge variant="secondary">
-                      {orderStatusCopy[order.status]?.label ?? order.status}
-                    </Badge>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <Badge variant="secondary">
+                    {orderStatusCopy[order.status]?.label ?? order.status}
+                  </Badge>
+                </div>
               </Link>
             ))
           )}
@@ -592,10 +598,10 @@ async function UserDashboard({
         </TabsContent>
 
         <TabsContent value="settings" className="pt-4">
-          <SettingsForm name={name} email={email} />
+          <SettingsForm name={name} email={email} image={image} />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   );
 }
 
