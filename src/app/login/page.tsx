@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { zodResolver } from "@/lib/zod-resolver";
 
@@ -50,9 +50,6 @@ function LoginForm() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Log in</CardTitle>
-      </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-1.5">
@@ -102,13 +99,13 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-16">
       <Link
         href="/"
-        className="mb-8 flex items-center gap-2 self-start font-display text-lg font-extrabold tracking-tight text-brand-deep dark:text-brand-bright"
+        className="mb-8 flex items-center justify-center gap-2.5 self-center font-display text-3xl font-extrabold tracking-tight text-brand-deep dark:text-brand-bright"
       >
-        <span className="size-2 rounded-full bg-lime" aria-hidden />
+        <span className="size-3 rounded-full bg-lime" aria-hidden />
         Trustee
       </Link>
 
-      <div className="mb-6">
+      <div className="mb-6 text-center">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Welcome back</h1>
       </div>
 

@@ -9,12 +9,12 @@ export function ListingGallery({ imageUrls, title }: { imageUrls: string[]; titl
   const [selected, setSelected] = useState(0);
 
   return (
-    <div>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-lg border">
+    <div className="flex gap-3">
+      <div className="relative h-[420px] flex-1 overflow-hidden rounded-lg border">
         <ImageWithSkeleton key={selected} src={imageUrls[selected]} alt={title} />
       </div>
       {imageUrls.length > 1 && (
-        <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-5">
+        <div className="scrollbar-hide flex h-[420px] w-24 shrink-0 flex-col gap-2 overflow-y-auto">
           {imageUrls.map((url, i) => (
             <button
               key={i}
@@ -22,7 +22,7 @@ export function ListingGallery({ imageUrls, title }: { imageUrls: string[]; titl
               onClick={() => setSelected(i)}
               aria-label={`View photo ${i + 1}`}
               className={cn(
-                "relative aspect-square overflow-hidden rounded-lg border",
+                "relative aspect-square w-full shrink-0 overflow-hidden rounded-lg border",
                 i === selected && "ring-2 ring-primary ring-offset-1",
               )}
             >

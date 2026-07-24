@@ -8,7 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageWithSkeleton } from "@/components/image-with-skeleton";
+import { CategoryIcon } from "@/lib/category-icons";
 import { MarketplaceFilters } from "./marketplace-filters";
+import { PageContainer } from "@/components/page-container";
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +110,7 @@ export default async function MarketplacePage({
   const hasFilters = Boolean(q || activeCategory || minPriceNaira || maxPriceNaira);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <div className="mb-8 flex items-center justify-between gap-4">
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
           Browse listings
@@ -136,14 +138,14 @@ export default async function MarketplacePage({
           />
 
           <div>
-            <p className="mb-2 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+            <p className="mb-3 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
               Categories
             </p>
-            <ul className="space-y-1 text-sm">
+            <ul className="space-y-1.5 text-sm">
               <li>
                 <Link
                   href={buildHref({ q, minPrice: minPriceNaira, maxPrice: maxPriceNaira, sort })}
-                  className={`block rounded-md px-2 py-1 ${
+                  className={`block rounded-full px-4 py-2 ${
                     !activeCategory
                       ? "bg-accent font-medium text-accent-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -162,12 +164,13 @@ export default async function MarketplacePage({
                       maxPrice: maxPriceNaira,
                       sort,
                     })}
-                    className={`block rounded-md px-2 py-1 ${
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 ${
                       activeCategory === c
                         ? "bg-accent font-medium text-accent-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
+                    <CategoryIcon category={c} active={activeCategory === c} className="size-4" />
                     {c}
                   </Link>
                 </li>
@@ -220,7 +223,7 @@ export default async function MarketplacePage({
                       </Badge>
                     </div>
                     <CardContent className="py-3">
-                      <p className="text-lg font-bold">{formatNaira(listing.priceKobo)}</p>
+                      <p className="font-display text-lg font-bold">{formatNaira(listing.priceKobo)}</p>
                       <p className="line-clamp-1 text-sm font-medium">{listing.title}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {listing.seller.name}
@@ -233,6 +236,6 @@ export default async function MarketplacePage({
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

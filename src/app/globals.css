@@ -147,6 +147,31 @@
   html {
     @apply font-sans scroll-smooth;
   }
+
+  /* Tailwind's preflight no longer sets cursor:pointer on native buttons, so
+     every plain <button> renders with the default arrow cursor unless told
+     otherwise. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOAST STYLING (light theme only) — light background with a soft shadow,
+   colored left edge so success/warning/error read at a glance
+   ═══════════════════════════════════════════════════════════════════════════ */
+@layer base {
+  [data-sonner-toast] {
+    border: none !important;
+  }
+
+  :root:not(.dark) [data-sonner-toast] {
+    align-items: flex-start !important;
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.12), 0 2px 6px -2px rgba(0, 0, 0, 0.06) !important;
+  }
+  :root:not(.dark) [data-sonner-toast] [data-icon] {
+    margin-top: 2px;
+  }
 }
 
 @layer utilities {

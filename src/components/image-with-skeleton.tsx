@@ -10,10 +10,12 @@ import { cn } from "@/lib/utils";
 export function ImageWithSkeleton({
   src,
   alt,
+  sizes = "100vw",
   className,
 }: {
   src: string;
   alt: string;
+  sizes?: string;
   className?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
@@ -25,6 +27,7 @@ export function ImageWithSkeleton({
         src={src}
         alt={alt}
         fill
+        sizes={sizes}
         unoptimized
         onLoad={() => setLoaded(true)}
         className={cn(

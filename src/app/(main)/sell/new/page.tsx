@@ -23,6 +23,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
 import { zodResolver } from "@/lib/zod-resolver";
+import { PageContainer } from "@/components/page-container";
 import {
   createListingSchema,
   listingCategories,
@@ -78,7 +79,7 @@ export default function NewListingPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <Link
         href="/dashboard"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -194,6 +195,7 @@ export default function NewListingPage() {
                         src={URL.createObjectURL(file)}
                         alt=""
                         fill
+                        sizes="64px"
                         className="object-cover"
                         unoptimized
                       />
@@ -217,6 +219,6 @@ export default function NewListingPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

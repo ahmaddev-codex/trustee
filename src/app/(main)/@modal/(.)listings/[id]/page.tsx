@@ -12,7 +12,7 @@ export default async function InterceptedListingModal({
 
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { seller: { select: { id: true, name: true, createdAt: true } } },
+    include: { seller: { select: { id: true, name: true, image: true, createdAt: true } } },
   });
 
   const session = await auth();

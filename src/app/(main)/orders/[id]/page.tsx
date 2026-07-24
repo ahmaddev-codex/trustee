@@ -12,6 +12,7 @@ import { orderStatusCopy, autoReleaseNote, refundEligibleNote } from "@/lib/stat
 import { notify } from "@/lib/notifications";
 import { Badge } from "@/components/ui/badge";
 import { OrderActions } from "./order-actions";
+import { PageContainer } from "@/components/page-container";
 
 export const dynamic = "force-dynamic";
 
@@ -123,7 +124,7 @@ export default async function OrderDetailPage({
   const copy = statusCopy[order.status] ?? { label: order.status, description: "" };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <Link
         href="/dashboard"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -189,11 +190,11 @@ export default async function OrderDetailPage({
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
             <dt className="text-muted-foreground">Item price</dt>
-            <dd className="font-medium">{formatNaira(order.amountKobo)}</dd>
+            <dd className="font-display font-medium">{formatNaira(order.amountKobo)}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Platform fee</dt>
-            <dd className="font-medium">{formatNaira(order.platformFeeKobo)}</dd>
+            <dd className="font-display font-medium">{formatNaira(order.platformFeeKobo)}</dd>
           </div>
           {order.shippedAt && (
             <div>
@@ -230,6 +231,6 @@ export default async function OrderDetailPage({
           />
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

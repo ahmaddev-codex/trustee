@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 import { signupSchema } from "@/lib/validations/auth";
+import { generateAvatarUrl, randomSeed, AVATAR_PALETTE } from "@/lib/avatar";
 
 export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
@@ -27,9 +28,13 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const defaultImage = generateAvatarUrl(
+      randomSeed(),
+      AVATAR_PALETTE[Math.floor(Math.random() * AVATAR_PALETTE.length)],
+    );
 
     const user = await prisma.user.create({
-      data: { name, email, passwordHash },
+      data: { name, email, passwordHash, image: defaultImage },
       select: { id: true, name: true, email: true },
     });
 

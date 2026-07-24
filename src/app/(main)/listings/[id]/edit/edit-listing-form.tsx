@@ -183,7 +183,7 @@ export function EditListingForm({
               <div className="flex flex-wrap gap-2 pt-2">
                 {existingUrls.map((url, i) => (
                   <div key={url} className="relative size-16 overflow-hidden rounded-md border">
-                    <Image src={url} alt="" fill className="object-cover" unoptimized />
+                    <Image src={url} alt="" fill sizes="64px" className="object-cover" unoptimized />
                     <button
                       type="button"
                       onClick={() => setExistingUrls((prev) => prev.filter((_, j) => j !== i))}
@@ -200,6 +200,7 @@ export function EditListingForm({
                       src={URL.createObjectURL(file)}
                       alt=""
                       fill
+                      sizes="64px"
                       className="object-cover"
                       unoptimized
                     />

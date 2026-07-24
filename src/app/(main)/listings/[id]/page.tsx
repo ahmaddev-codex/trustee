@@ -5,6 +5,7 @@ import { TbArrowLeft } from "react-icons/tb";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ListingDetailContent } from "./listing-detail-content";
+import { PageContainer } from "@/components/page-container";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function ListingDetailPage({
 
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { seller: { select: { id: true, name: true, createdAt: true } } },
+    include: { seller: { select: { id: true, name: true, image: true, createdAt: true } } },
   });
 
   if (!listing) notFound();
@@ -24,13 +25,13 @@ export default async function ListingDetailPage({
   const isOwnListing = session?.user?.id === listing.sellerId;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <PageContainer className="py-6 sm:py-8">
       <Link
-        href="/marketplace"
+        href={isOwnListing ? "/dashboard?tab=listings" : "/marketplace"}
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <TbArrowLeft className="size-4" />
-        Back to Marketplace
+        {isOwnListing ? "Back to your listings" : "Back to Marketplace"}
       </Link>
 
       <ListingDetailContent
@@ -38,6 +39,6 @@ export default async function ListingDetailPage({
         isAuthed={!!session?.user}
         isOwnListing={isOwnListing}
       />
-    </div>
+    </PageContainer>
   );
 }

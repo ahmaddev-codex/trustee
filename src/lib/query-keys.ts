@@ -9,4 +9,7 @@ export const queryKeys = {
   monnify: {
     banks: () => ["monnify", "banks"] as const,
   },
+  cart: {
+    all: () => ["cart"] as const,
+  },
 };

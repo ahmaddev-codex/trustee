@@ -22,11 +22,14 @@ export async function PATCH(request: Request) {
   try {
     const user = await prisma.user.update({
       where: { id: session.user.id },
-      data: { name: parsed.data.name },
-      select: { name: true },
+      data: {
+        name: parsed.data.name,
+        ...(parsed.data.image !== undefined ? { image: parsed.data.image } : {}),
+      },
+      select: { name: true, image: true },
     });
 
-    return NextResponse.json({ name: user.name });
+    return NextResponse.json({ name: user.name, image: user.image });
   } catch (error) {
     console.error("Failed to update profile:", error);
     return NextResponse.json(

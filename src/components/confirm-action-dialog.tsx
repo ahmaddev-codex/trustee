@@ -21,6 +21,7 @@ export function ConfirmActionDialog({
   trigger,
   triggerVariant = "default",
   triggerSize,
+  triggerClassName,
   triggerDisabled,
   title,
   description,
@@ -33,6 +34,7 @@ export function ConfirmActionDialog({
   trigger: ReactNode;
   triggerVariant?: ButtonVariant;
   triggerSize?: ButtonSize;
+  triggerClassName?: string;
   triggerDisabled?: boolean;
   title: string;
   description: string;
@@ -47,7 +49,14 @@ export function ConfirmActionDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant={triggerVariant} size={triggerSize} disabled={triggerDisabled} />}
+        render={
+          <Button
+            variant={triggerVariant}
+            size={triggerSize}
+            className={triggerClassName}
+            disabled={triggerDisabled}
+          />
+        }
       >
         {trigger}
       </DialogTrigger>

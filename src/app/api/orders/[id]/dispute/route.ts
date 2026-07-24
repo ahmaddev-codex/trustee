@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notifyAdmins } from "@/lib/notifications";
+import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]/dispute">) {
   const { id } = await ctx.params;
@@ -40,12 +40,21 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
       prisma.order.update({ where: { id }, data: { status: "DISPUTED" } }),
     ]);
 
-    await notifyAdmins({
-      type: "DISPUTE_RAISED",
-      title: "New dispute raised",
-      body: `A dispute was raised for "${order.listing.title}".`,
-      link: "/dashboard?tab=disputes",
-    });
+    await Promise.all([
+      notify({
+        userId: order.sellerId,
+        type: "DISPUTE_RAISED",
+        title: "A dispute was raised against your sale",
+        body: `The buyer raised a dispute for "${order.listing.title}" — an admin will review it.`,
+        link: `/orders/${order.id}`,
+      }),
+      notifyAdmins({
+        type: "DISPUTE_RAISED",
+        title: "New dispute raised",
+        body: `A dispute was raised for "${order.listing.title}".`,
+        link: "/dashboard?tab=disputes",
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -33,6 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           email: user.email,
           role: user.role,
+          image: user.image,
         };
       },
     }),
@@ -42,11 +43,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.picture = user.image;
       }
-      // Lets the settings form push a fresh name into the session immediately
-      // (via useSession().update()) instead of waiting for the next re-login.
+      // Lets the settings form push a fresh name/image into the session
+      // immediately (via useSession().update()) instead of waiting for the
+      // next re-login.
       if (trigger === "update" && session?.name) {
         token.name = session.name;
+      }
+      if (trigger === "update" && session?.image !== undefined) {
+        token.picture = session.image;
       }
       return token;
     },
@@ -54,6 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "USER" | "ADMIN";
+        session.user.image = (token.picture as string | null) ?? null;
       }
       return session;
     },
