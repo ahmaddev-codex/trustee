@@ -43,9 +43,9 @@ export default function ForgotPasswordPage() {
     <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-16">
       <Link
         href="/"
-        className="mb-8 flex items-center gap-2 self-start font-display text-lg font-extrabold tracking-tight text-brand-deep dark:text-brand-bright"
+        className="mb-8 flex items-center justify-center gap-2.5 self-center font-display text-3xl font-extrabold tracking-tight text-brand-deep dark:text-brand-bright"
       >
-        <span className="size-2 rounded-full bg-lime" aria-hidden />
+        <span className="size-3 rounded-full bg-lime" aria-hidden />
         Trustee
       </Link>
 
