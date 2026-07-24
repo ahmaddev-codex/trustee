@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
 
 const OPEN_ORDER_STATUSES = ["AWAITING_PAYMENT", "FUNDED", "SHIPPED", "DISPUTED"] as const;
 const ADMIN_TABS = ["payouts", "disputes", "flagged", "settings"] as const;
-const USER_TABS = ["listings", "buying", "selling", "payout", "settings"] as const;
+const USER_TABS = ["listings", "buying", "selling", "transactions", "payout", "settings"] as const;
 
 export default async function DashboardPage({
   searchParams,
@@ -454,6 +454,30 @@ async function UserDashboard({
 
   const hasPayoutAccount = Boolean(user?.bankAccountName);
 
+  // One chronological ledger across both roles — a purchase is money out
+  // (the full item price), a sale is money in (price minus the platform
+  // fee, i.e. what actually lands in the seller's payout).
+  const transactions = [
+    ...buying.map((order) => ({
+      id: order.id,
+      title: order.listing.title,
+      imageUrl: order.listing.imageUrls[0],
+      role: "Bought" as const,
+      date: order.releasedAt ?? order.refundedAt ?? order.shippedAt ?? order.fundedAt ?? order.createdAt,
+      amountKobo: -order.amountKobo,
+      status: order.status,
+    })),
+    ...selling.map((order) => ({
+      id: order.id,
+      title: order.listing.title,
+      imageUrl: order.listing.imageUrls[0],
+      role: "Sold" as const,
+      date: order.releasedAt ?? order.refundedAt ?? order.shippedAt ?? order.fundedAt ?? order.createdAt,
+      amountKobo: order.amountKobo - order.platformFeeKobo,
+      status: order.status,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
   const stats = [
     { label: "Active listings", value: activeListingsCount },
     { label: "Open purchases", value: openPurchasesCount },
@@ -486,6 +510,7 @@ async function UserDashboard({
           <TabsTrigger value="listings">My listings</TabsTrigger>
           <TabsTrigger value="buying">Buying</TabsTrigger>
           <TabsTrigger value="selling">Selling</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payout">
             {hasPayoutAccount ? (
               <TbCircleCheck className="size-3.5 text-green-600 dark:text-green-400" />
@@ -587,6 +612,49 @@ async function UserDashboard({
                   <Badge variant="secondary">
                     {orderStatusCopy[order.status]?.label ?? order.status}
                   </Badge>
+                </div>
+              </Link>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="transactions" className="divide-y divide-border pt-4">
+          {transactions.length === 0 ? (
+            q ? (
+              <EmptyState message={`No transactions match "${q}".`} href="/dashboard" cta="Clear search" />
+            ) : (
+              <EmptyState
+                message="No transactions yet."
+                href="/marketplace"
+                cta="Browse listings"
+              />
+            )
+          ) : (
+            transactions.map((t) => (
+              <Link key={`${t.role}-${t.id}`} href={`/orders/${t.id}`} className="block">
+                <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
+                  <div className="flex items-center gap-3">
+                    <Thumbnail src={t.imageUrl} alt={t.title} />
+                    <div>
+                      <p className="font-medium">{t.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {t.role} · {t.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className={`font-display text-sm font-bold ${
+                        t.amountKobo < 0n ? "text-destructive" : "text-green-600 dark:text-green-400"
+                      }`}
+                    >
+                      {t.amountKobo < 0n ? "" : "+"}
+                      {formatNaira(t.amountKobo)}
+                    </p>
+                    <Badge variant="secondary">
+                      {orderStatusCopy[t.status]?.label ?? t.status}
+                    </Badge>
+                  </div>
                 </div>
               </Link>
             ))
