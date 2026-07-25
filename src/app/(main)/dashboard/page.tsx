@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatNaira } from "@/lib/money";
 import { orderStatusCopy, listingStatusLabel } from "@/lib/status";
+import { orderSummaryTitle, orderSummaryImage } from "@/lib/order-summary";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -123,13 +124,19 @@ async function AdminDashboard({
   ] = await Promise.all([
     prisma.order.findMany({
       where: { monnifyDisbursementRef: { not: null }, releasedAt: null, refundedAt: null },
-      include: { listing: { select: { title: true } } },
+      include: { items: { include: { listing: { select: { title: true } } } } },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.dispute.findMany({
       where: { status: "OPEN" },
       include: {
-        order: { include: { listing: { select: { title: true } }, buyer: true, seller: true } },
+        order: {
+          include: {
+            items: { include: { listing: { select: { title: true } } } },
+            buyer: true,
+            seller: true,
+          },
+        },
         raisedBy: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -181,13 +188,13 @@ async function AdminDashboard({
           where: {
             OR: [
               { id: q },
-              { listing: { title: { contains: q, mode: "insensitive" } } },
+              { items: { some: { listing: { title: { contains: q, mode: "insensitive" } } } } },
               { buyer: { name: { contains: q, mode: "insensitive" } } },
               { seller: { name: { contains: q, mode: "insensitive" } } },
             ],
           },
           include: {
-            listing: { select: { title: true } },
+            items: { include: { listing: { select: { title: true } } } },
             buyer: { select: { name: true } },
             seller: { select: { name: true } },
           },
@@ -248,10 +255,6 @@ async function AdminDashboard({
                   </p>
                   <div className="space-y-2">
                     {matchedListings.map((listing) => (
-                      // A plain <a> forces a full navigation to the standalone listing
-                      // page — a <Link> here gets caught by the marketplace's
-                      // intercepting (.)listings modal route, which we don't want
-                      // when navigating from the dashboard.
                       <a key={listing.id} href={`/listings/${listing.id}`}>
                         <Card className="transition-shadow hover:shadow-md">
                           <CardContent className="flex items-center justify-between gap-3 py-3">
@@ -281,7 +284,7 @@ async function AdminDashboard({
                         <Card className="transition-shadow hover:shadow-md">
                           <CardContent className="flex items-center justify-between gap-3 py-3">
                             <p className="text-sm">
-                              <span className="font-medium">{order.listing.title}</span>{" "}
+                              <span className="font-medium">{orderSummaryTitle(order.items)}</span>{" "}
                               <span className="text-muted-foreground">
                                 · {order.buyer.name} → {order.seller.name} ·{" "}
                                 {formatNaira(order.amountKobo)}
@@ -322,7 +325,7 @@ async function AdminDashboard({
                 {pending.map((order) => (
                   <Card key={order.id}>
                     <CardHeader>
-                      <CardTitle className="text-base">{order.listing.title}</CardTitle>
+                      <CardTitle className="text-base">{orderSummaryTitle(order.items)}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <p className="text-sm text-muted-foreground">
@@ -380,7 +383,7 @@ async function AdminDashboard({
             disputes.map((dispute) => (
               <Card key={dispute.id}>
                 <CardHeader>
-                  <CardTitle className="text-base">{dispute.order.listing.title}</CardTitle>
+                  <CardTitle className="text-base">{orderSummaryTitle(dispute.order.items)}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm">
@@ -469,23 +472,28 @@ async function UserDashboard({
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.findMany({
-      where: { buyerId: userId, ...(titleFilter ? { listing: { title: titleFilter } } : {}) },
+      where: {
+        buyerId: userId,
+        ...(titleFilter ? { items: { some: { listing: { title: titleFilter } } } } : {}),
+      },
       orderBy: { createdAt: "desc" },
-      include: { listing: { select: { title: true, imageUrls: true } } },
+      include: { items: { include: { listing: { select: { title: true, imageUrls: true } } } } },
     }),
     prisma.order.findMany({
-      where: { sellerId: userId, ...(titleFilter ? { listing: { title: titleFilter } } : {}) },
+      where: {
+        sellerId: userId,
+        ...(titleFilter ? { items: { some: { listing: { title: titleFilter } } } } : {}),
+      },
       orderBy: { createdAt: "desc" },
-      include: { listing: { select: { title: true, imageUrls: true } } },
+      include: { items: { include: { listing: { select: { title: true, imageUrls: true } } } } },
     }),
     prisma.user.findUnique({ where: { id: userId }, select: { bankAccountName: true } }),
   
     prisma.listing.count({ where: { sellerId: userId, status: "ACTIVE" } }),
     prisma.order.count({ where: { buyerId: userId, status: { in: [...OPEN_ORDER_STATUSES] } } }),
     prisma.order.count({ where: { sellerId: userId, status: { in: [...OPEN_ORDER_STATUSES] } } }),
-    // In sales: money that has actually landed in your bank from released
-    // sales, net of the platform fee — not what's still sitting in escrow
-    // mid-order, and not netted against anything you've spent as a buyer.
+    // In sales: money landed from released sales, net of platform fee — not
+    // what's still in escrow, and not netted against buyer spend.
     prisma.order.aggregate({
       where: { sellerId: userId, status: "RELEASED" },
       _sum: { amountKobo: true, platformFeeKobo: true },
@@ -508,14 +516,13 @@ async function UserDashboard({
     (sellerEscrow._sum.amountKobo ?? 0n) -
     (sellerEscrow._sum.platformFeeKobo ?? 0n);
 
-  // One chronological ledger across both roles — a purchase is money out
-  // (the full item price), a sale is money in (price minus the platform
-  // fee, i.e. what actually lands in the seller's payout).
+  // One chronological ledger across both roles — a purchase is money out,
+  // a sale is money in (price minus platform fee).
   const transactions = [
     ...buying.map((order) => ({
       id: order.id,
-      title: order.listing.title,
-      imageUrl: order.listing.imageUrls[0],
+      title: orderSummaryTitle(order.items),
+      imageUrl: orderSummaryImage(order.items),
       role: "Bought" as const,
       date: order.releasedAt ?? order.refundedAt ?? order.shippedAt ?? order.fundedAt ?? order.createdAt,
       amountKobo: -order.amountKobo,
@@ -523,8 +530,8 @@ async function UserDashboard({
     })),
     ...selling.map((order) => ({
       id: order.id,
-      title: order.listing.title,
-      imageUrl: order.listing.imageUrls[0],
+      title: orderSummaryTitle(order.items),
+      imageUrl: orderSummaryImage(order.items),
       role: "Sold" as const,
       date: order.releasedAt ?? order.refundedAt ?? order.shippedAt ?? order.fundedAt ?? order.createdAt,
       amountKobo: order.amountKobo - order.platformFeeKobo,
@@ -541,8 +548,8 @@ async function UserDashboard({
       .filter((order) => (IN_ESCROW_STATUSES as readonly string[]).includes(order.status))
       .map((order) => ({
         id: order.id,
-        title: order.listing.title,
-        imageUrl: order.listing.imageUrls[0],
+        title: orderSummaryTitle(order.items),
+        imageUrl: orderSummaryImage(order.items),
         role: "Bought" as const,
         date: order.fundedAt ?? order.createdAt,
         amountKobo: order.amountKobo,
@@ -552,8 +559,8 @@ async function UserDashboard({
       .filter((order) => (IN_ESCROW_STATUSES as readonly string[]).includes(order.status))
       .map((order) => ({
         id: order.id,
-        title: order.listing.title,
-        imageUrl: order.listing.imageUrls[0],
+        title: orderSummaryTitle(order.items),
+        imageUrl: orderSummaryImage(order.items),
         role: "Sold" as const,
         date: order.fundedAt ?? order.createdAt,
         amountKobo: order.amountKobo - order.platformFeeKobo,
@@ -663,9 +670,9 @@ async function UserDashboard({
               <Link key={order.id} href={`/orders/${order.id}`} className="block">
                 <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
                   <div className="flex items-center gap-3">
-                    <Thumbnail src={order.listing.imageUrls[0]} alt={order.listing.title} />
+                    <Thumbnail src={orderSummaryImage(order.items)} alt={orderSummaryTitle(order.items)} />
                     <div>
-                      <p className="font-medium">{order.listing.title}</p>
+                      <p className="font-medium">{orderSummaryTitle(order.items)}</p>
                       <p className="font-display text-sm text-muted-foreground">
                         {formatNaira(order.amountKobo)}
                       </p>
@@ -692,9 +699,9 @@ async function UserDashboard({
               <Link key={order.id} href={`/orders/${order.id}`} className="block">
                 <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
                   <div className="flex items-center gap-3">
-                    <Thumbnail src={order.listing.imageUrls[0]} alt={order.listing.title} />
+                    <Thumbnail src={orderSummaryImage(order.items)} alt={orderSummaryTitle(order.items)} />
                     <div>
-                      <p className="font-medium">{order.listing.title}</p>
+                      <p className="font-medium">{orderSummaryTitle(order.items)}</p>
                       <p className="font-display text-sm text-muted-foreground">
                         {formatNaira(order.amountKobo)}
                       </p>

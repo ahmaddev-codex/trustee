@@ -6,9 +6,8 @@ import { useSearchParams } from "next/navigation";
 
 import { BrandLoader } from "@/components/brand-loader";
 
-// Monnify's checkout page is served from a *.monnify.com host — this is the
-// only thing that keeps ?url= from becoming an open redirect, since anyone
-// could otherwise craft a trustee.app link pointing anywhere.
+// Monnify's checkout page is served from *.monnify.com — the only thing
+// stopping ?url= from becoming an open redirect.
 function isTrustedCheckoutUrl(value: string): boolean {
   try {
     const { protocol, hostname } = new URL(value);

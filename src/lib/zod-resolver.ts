@@ -1,10 +1,8 @@
 import type { FieldErrors, FieldValues, Resolver } from "react-hook-form";
 import type { z } from "zod";
 
-// Minimal stand-in for @hookform/resolvers' zodResolver. Avoids a hard
-// dependency on that package's bundled zod-version type tagging, which lags
-// behind zod's own release cadence and breaks type-checking across minor
-// zod versions.
+// Minimal stand-in for @hookform/resolvers' zodResolver — avoids a hard
+// dependency on its bundled zod-version type tagging, which lags zod's own releases.
 export function zodResolver<T extends FieldValues>(
   schema: z.ZodType<T>,
 ): Resolver<T> {

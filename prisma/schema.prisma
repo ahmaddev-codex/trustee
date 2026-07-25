@@ -40,7 +40,10 @@ model User {
   id                String   @id @default(cuid())
   name              String
   email             String   @unique
-  passwordHash      String
+  passwordHash      String?
+  // Set once a password-holding account confirms ownership via password
+  // login after a blocked "Continue with Google" attempt for its email.
+  googleLinkedAt    DateTime?
   role              Role     @default(USER)
   image             String?
 
@@ -113,7 +116,7 @@ model Listing {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  orders      Order[]
+  orderItems  OrderItem[]
   cartItems   CartItem[]
 
   @@index([status])
@@ -123,8 +126,7 @@ model Listing {
 model Order {
   id     String @id @default(cuid())
 
-  listingId String
-  listing   Listing @relation(fields: [listingId], references: [id])
+  items OrderItem[]
 
   buyerId  String
   buyer    User   @relation("BuyerOrders", fields: [buyerId], references: [id])
@@ -136,9 +138,8 @@ model Order {
   platformFeeKobo BigInt
   status          OrderStatus @default(AWAITING_PAYMENT)
 
-  // Not unique: a cart checkout shares one reference across several orders
-  // (one per seller). A single-item purchase still gets a globally-unique
-  // reference in practice (trustee-${order.id}) since order IDs are unique.
+  // Not unique: a multi-seller cart checkout shares one reference across
+  // several orders, one per seller.
   monnifyPaymentReference    String
   monnifyTransactionRef      String?
   monnifyDisbursementRef     String?
@@ -159,6 +160,26 @@ model Order {
   @@index([sellerId])
   @@index([monnifyPaymentReference])
   @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+
+  // Snapshot of the listing's price at purchase time — Order.amountKobo is
+  // the sum of these, computed once at creation.
+  priceKobo BigInt
+
+  createdAt DateTime @default(now())
+
+  @@unique([orderId, listingId])
+  @@index([orderId])
+  @@map("order_items")
 }
 
 model Dispute {

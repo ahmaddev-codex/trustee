@@ -29,6 +29,9 @@ function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
+      // Google's profile-photo CDN (lh3.googleusercontent.com) rejects
+      // hotlinked requests based on Referer unless this is set.
+      referrerPolicy="no-referrer"
       className={cn(
         "aspect-square size-full rounded-full object-cover",
         className

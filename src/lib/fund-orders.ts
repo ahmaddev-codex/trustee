@@ -1,15 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { verifyTransactionByPaymentReference } from "@/lib/monnify";
+import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify } from "@/lib/notifications";
 
 // Flips every AWAITING_PAYMENT order sharing a payment reference to FUNDED —
-// a cart checkout puts several orders (one per seller) under one reference,
-// so a single payment must fund all of them together. Used by both the
-// webhook and the cart checkout-success page's verify-transaction fallback.
+// a cart checkout groups orders per seller, so one payment funds them all.
 export async function fundOrdersByPaymentReference(paymentReference: string) {
   const pending = await prisma.order.findMany({
     where: { monnifyPaymentReference: paymentReference, status: "AWAITING_PAYMENT" },
-    include: { listing: { select: { title: true } } },
+    include: { items: { include: { listing: { select: { title: true } } } } },
   });
 
   if (pending.length === 0) return;
@@ -28,7 +27,7 @@ export async function fundOrdersByPaymentReference(paymentReference: string) {
       userId: order.sellerId,
       type: "ORDER_FUNDED",
       title: "Your item sold",
-      body: `Payment received for "${order.listing.title}" — mark it shipped when it's on its way.`,
+      body: `Payment received for "${orderSummaryTitle(order.items)}" — mark it shipped when it's on its way.`,
       link: `/orders/${order.id}`,
     });
   }

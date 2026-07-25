@@ -7,9 +7,8 @@ import { TbArrowsShuffle, TbCheck } from "react-icons/tb";
 
 import { generateAvatarUrl, randomSeed, AVATAR_PALETTE } from "@/lib/avatar";
 
-// 6 shuffleable DiceBear options, each pinned to a brand-accent background so
-// the set reads as a designed choice rather than DiceBear's own per-seed
-// defaults.
+// 6 shuffleable DiceBear options, pinned to brand-accent backgrounds so the
+// set reads as designed, not DiceBear's per-seed defaults.
 export function AvatarPicker({
   selectedUrl,
   onSelect,
@@ -20,9 +19,8 @@ export function AvatarPicker({
   const [seeds, setSeeds] = useState<string[]>([]);
   const [shuffleSpins, setShuffleSpins] = useState(0);
 
-  // Seeded client-side only — Math.random() during SSR would produce a
-  // different set of seeds than the client's hydration pass and trigger a
-  // mismatch.
+  // Seeded client-side only — Math.random() during SSR would mismatch the
+  // client's hydration pass.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: this is the one-time client-only randomization the mismatch note above describes, not state synced from props.
     setSeeds(Array.from({ length: 6 }, randomSeed));

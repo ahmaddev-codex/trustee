@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
 import { signIn } from "next-auth/react";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 
 import { TbLock, TbRosetteDiscountCheck } from "react-icons/tb";
+import { FcGoogle } from "react-icons/fc";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +42,25 @@ export default function SignupPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const onGoogleClick = () => {
+    setGoogleLoading(true);
+    signIn("google", { callbackUrl: "/dashboard" });
+  };
+
+  // A browser-back after Google sign-in fails can restore this page from
+  // bfcache with loading state still frozen true — reset it on restore.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setGoogleLoading(false);
+        setSubmitting(false);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const {
     register,
@@ -89,74 +110,95 @@ export default function SignupPage() {
 
   const goTo = (path: string) => {
     setWelcomeOpen(false);
-    router.push(path);
+    // Hard navigation — router.push() can serve a stale pre-auth RSC
+    // cache for the destination, leaving users stuck until a manual refresh.
+    window.location.href = path;
   };
 
   if (submitting) {
     return <BrandLoader message="Creating your account…" />;
   }
 
+  if (googleLoading) {
+    return <BrandLoader message="Redirecting you to Google…" />;
+  }
+
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-16">
-      <Link
-        href="/"
-        className="mb-8 flex items-center justify-center gap-2.5 self-center font-display text-3xl font-extrabold tracking-tight text-brand-deep dark:text-brand-bright"
-      >
-        <span className="size-3 rounded-full bg-lime" aria-hidden />
-        Trustee
-      </Link>
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--brand-deep)] px-4 py-16 text-white">
+      <div className="mx-auto flex w-full max-w-sm flex-col">
+        <Link href="/" className="mb-8 self-center">
+          <Image
+            src="/trustee-logo-full-dark.svg"
+            alt="Trustee"
+            width={147}
+            height={30}
+            priority
+          />
+        </Link>
 
-      <div className="mb-6 text-center">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Create your account</h1>
-      </div>
+        <div className="mb-6 text-center">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-white">Create your account</h1>
+        </div>
 
-      <Card>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full name</Label>
-              <Input id="name" {...register("name")} />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <PasswordInput id="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-sm text-destructive">
-                  {errors.password.message}
-                </p>
-              )}
-              <PasswordStrengthMeter password={password} />
-            </div>
-
-            <Button type="submit" className="w-full">
-              Sign up
+        <Card>
+          <CardContent className="pt-4">
+            <Button type="button" variant="outline" className="w-full" onClick={onGoogleClick}>
+              <FcGoogle className="size-4" />
+              Continue with Google
             </Button>
-          </form>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="underline underline-offset-4">
-              Log in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+            <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              or
+              <div className="h-px flex-1 bg-border" />
+            </div>
 
-      <div className="mt-4 flex items-center gap-2 border border-border p-3 text-xs text-muted-foreground">
-        <TbLock className="size-4 shrink-0 text-brand" />
-        Every purchase is protected by escrow — sellers only get paid once you confirm receipt.
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" {...register("name")} />
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" {...register("email")} />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Password</Label>
+                <PasswordInput id="password" {...register("password")} />
+                {errors.password && (
+                  <p className="text-sm text-destructive">
+                    {errors.password.message}
+                  </p>
+                )}
+                <PasswordStrengthMeter password={password} />
+              </div>
+
+              <Button type="submit" className="w-full">
+                Sign up
+              </Button>
+            </form>
+
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link href="/login" className="underline underline-offset-4">
+                Log in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+
+        <div className="mt-4 flex items-center gap-2 border border-white/15 p-3 text-xs text-white/70">
+          <TbLock className="size-4 shrink-0 text-lime" />
+          Every purchase is protected by escrow — sellers only get paid once you confirm receipt.
+        </div>
       </div>
 
       <Dialog open={welcomeOpen} onOpenChange={(open) => !open && goTo("/dashboard")}>

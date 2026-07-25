@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { koboToNairaAmount } from "@/lib/money";
 import { analyzeDispute, GroqError } from "@/lib/groq";
+import { orderSummaryTitle } from "@/lib/order-summary";
 
 export async function POST(
   request: Request,
@@ -20,7 +21,7 @@ export async function POST(
     const dispute = await prisma.dispute.findUnique({
       where: { id },
       include: {
-        order: { include: { listing: { select: { title: true } } } },
+        order: { include: { items: { include: { listing: { select: { title: true } } } } } },
         raisedBy: { select: { id: true } },
       },
     });
@@ -30,7 +31,7 @@ export async function POST(
 
     try {
       const suggestion = await analyzeDispute({
-        listingTitle: dispute.order.listing.title,
+        listingTitle: orderSummaryTitle(dispute.order.items),
         amountNaira: koboToNairaAmount(dispute.order.amountKobo),
         raisedByRole: dispute.raisedById === dispute.order.buyerId ? "buyer" : "seller",
         reason: dispute.reason,

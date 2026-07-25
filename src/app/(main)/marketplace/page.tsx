@@ -124,10 +124,8 @@ export default async function MarketplacePage({
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
         <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <MarketplaceFilters
-            // Remounts fresh whenever the URL's filters change instead of
-            // reusing the same instance — that's what keeps the uncontrolled
-            // search/price inputs and the sort select from going stale (e.g.
-            // still showing old values right after "Clear all filters").
+            // Remounts fresh when the URL's filters change, keeping the
+            // uncontrolled inputs and sort select from going stale after "Clear all filters".
             key={`${q}|${minPriceNaira ?? ""}|${maxPriceNaira ?? ""}|${sort}|${activeCategory ?? ""}`}
             q={q}
             minPrice={minPriceNaira}

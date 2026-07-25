@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { authorizeSingleTransfer, MonnifyError } from "@/lib/monnify";
 import { serializeOrder } from "@/lib/serialize";
+import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify } from "@/lib/notifications";
 
 export async function POST(
@@ -26,11 +27,12 @@ export async function POST(
   try {
     const order = await prisma.order.findFirst({
       where: { monnifyDisbursementRef: reference },
-      include: { listing: { select: { title: true } } },
+      include: { items: { include: { listing: { select: { title: true } } } } },
     });
     if (!order) {
       return NextResponse.json({ error: "No order matches this disbursement" }, { status: 404 });
     }
+    const title = orderSummaryTitle(order.items);
 
     try {
       const transfer = await authorizeSingleTransfer(reference, otp);
@@ -43,10 +45,8 @@ export async function POST(
         );
       }
 
-      // Reference prefix tells us which side of the escrow this transfer settles
-      // ("payout-"/"dispute-release-" pay the seller, "refund-"/"dispute-refund-"
-      // return the buyer) — more reliable than inferring intent from the
-      // order's current status, which is the same for both dispute outcomes.
+      // Reference prefix tells us which side of the escrow this settles
+      // ("payout-"/"dispute-release-" = seller, "refund-"/"dispute-refund-" = buyer).
       const targetStatus = reference.includes("refund") ? "REFUNDED" : "RELEASED";
 
       const [updated] = await prisma.$transaction([
@@ -66,23 +66,27 @@ export async function POST(
             resolvedAt: new Date(),
           },
         }),
-        // If this transfer refunds the buyer, the sale fell through — put the
-        // listing back on the market.
+        // If this transfer refunds the buyer, the sale fell through — put
+        // every item's listing back on the market.
         ...(targetStatus === "REFUNDED"
-          ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "ACTIVE" as const } })]
+          ? [
+              prisma.listing.updateMany({
+                where: { id: { in: order.items.map((item) => item.listingId) } },
+                data: { status: "ACTIVE" as const },
+              }),
+            ]
           : []),
       ]);
 
-      // This transfer was left pending OTP authorization earlier — whoever was
-      // told to expect it (the beneficiary, plus both sides if a dispute
-      // resolution was waiting on it) needs to hear that it actually landed.
+      // This transfer was pending OTP authorization — notify whoever was
+      // told to expect it that it landed.
       const isDispute = reference.startsWith("dispute-");
       if (targetStatus === "RELEASED") {
         await notify({
           userId: order.sellerId,
           type: "PAYOUT_RELEASED",
           title: "Payment released to you",
-          body: `Your payout for "${order.listing.title}" has been sent.`,
+          body: `Your payout for "${title}" has been sent.`,
           link: `/orders/${order.id}`,
         });
         if (isDispute) {
@@ -90,7 +94,7 @@ export async function POST(
             userId: order.buyerId,
             type: "DISPUTE_RESOLVED",
             title: "Dispute resolved",
-            body: `The dispute for "${order.listing.title}" was resolved — funds were released to the seller.`,
+            body: `The dispute for "${title}" was resolved — funds were released to the seller.`,
             link: `/orders/${order.id}`,
           });
         }
@@ -99,7 +103,7 @@ export async function POST(
           userId: order.buyerId,
           type: "REFUND_ISSUED",
           title: "Refund sent",
-          body: `Your refund for "${order.listing.title}" has been sent.`,
+          body: `Your refund for "${title}" has been sent.`,
           link: `/orders/${order.id}`,
         });
         await notify({
@@ -107,8 +111,8 @@ export async function POST(
           type: isDispute ? "DISPUTE_RESOLVED" : "REFUND_ISSUED",
           title: isDispute ? "Dispute resolved" : "Buyer refunded",
           body: isDispute
-            ? `The dispute for "${order.listing.title}" was resolved — funds were refunded to the buyer.`
-            : `The buyer was refunded for "${order.listing.title}".`,
+            ? `The dispute for "${title}" was resolved — funds were refunded to the buyer.`
+            : `The buyer was refunded for "${title}".`,
           link: `/orders/${order.id}`,
         });
       }

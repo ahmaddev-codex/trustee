@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { TbMenu2, TbX, TbSearch, TbLayoutDashboardFilled, TbUser } from "react-icons/tb";
@@ -50,9 +51,8 @@ export function Navbar() {
     </form>
   );
 
-  // One purple pill holds both "Marketplace" (white, underlined on hover so
-  // it clearly reads as a link) and the search box (white background) right
-  // beside it, so browse + search feel like a single unit.
+  // One purple pill holds both "Marketplace" and the search box, so browse
+  // + search feel like a single unit.
   const marketplaceAndSearch = (
     <div className="flex items-center gap-1.5 rounded-full bg-brand-deep p-2">
       <Link
@@ -134,12 +134,23 @@ export function Navbar() {
             Dashboard
           </Button>
         ) : (
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display text-2xl font-extrabold tracking-tight text-brand-deep dark:text-brand-bright"
-          >
-            <span className="size-2.5 rounded-full bg-lime" aria-hidden />
-            Trustee
+          <Link href="/">
+            <Image
+              src="/trustee-logo-full-light.svg"
+              alt="Trustee"
+              width={132}
+              height={27}
+              className="dark:hidden"
+              priority
+            />
+            <Image
+              src="/trustee-logo-full-dark.svg"
+              alt="Trustee"
+              width={132}
+              height={27}
+              className="hidden dark:block"
+              priority
+            />
           </Link>
         )}
 

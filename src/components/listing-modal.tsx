@@ -20,11 +20,8 @@ export function ListingModal({ children }: { children: React.ReactNode }) {
     >
       <DialogContent
         ref={contentRef}
-        // Base UI's default initial focus lands on the first tabbable element
-        // inside the popup — for a single-image listing that's the Buy button
-        // near the bottom, which drags the scrollable content down with it.
-        // Focus the (non-scrolling) container itself so listings always open
-        // scrolled to the top.
+        // Base UI's default focus lands on the Buy button near the bottom, dragging
+        // content down — focus the container itself so listings open scrolled to top.
         initialFocus={contentRef}
         className="sm:max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hide"
       >

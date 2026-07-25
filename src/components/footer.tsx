@@ -10,12 +10,8 @@ export function Footer() {
     <footer className="mt-auto border-t bg-[var(--brand-deep)] text-white/70">
       <PageContainer className="grid grid-cols-1 gap-8 py-12 text-sm sm:grid-cols-3">
         <div>
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display text-lg font-extrabold tracking-tight text-white"
-          >
-            <span className="size-2 rounded-full bg-lime" aria-hidden />
-            Trustee
+          <Link href="/">
+            <Image src="/trustee-logo-full-dark.svg" alt="Trustee" width={118} height={24} />
           </Link>
           <p className="mt-3 max-w-xs text-white/60">
             Escrow for P2P classifieds — payments are held until the buyer confirms receipt, so

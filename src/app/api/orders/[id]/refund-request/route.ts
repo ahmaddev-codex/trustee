@@ -6,6 +6,7 @@ import { koboToNairaAmount } from "@/lib/money";
 import { refundEligibleAt } from "@/lib/escrow";
 import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
 import { serializeOrder } from "@/lib/serialize";
+import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(
@@ -22,7 +23,7 @@ export async function POST(
   try {
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { buyer: true, listing: { select: { title: true } } },
+      include: { buyer: true, items: { include: { listing: { select: { title: true } } } } },
     });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -49,12 +50,13 @@ export async function POST(
     }
 
     const reference = `refund-${order.id}`;
+    const title = orderSummaryTitle(order.items);
 
     try {
       const transfer = await initiateSingleTransfer({
         amount: koboToNairaAmount(order.amountKobo),
         reference,
-        narration: `Trustee refund — ${order.listing.title}`,
+        narration: `Trustee refund — ${title}`,
         destinationBankCode: buyer.bankCode,
         destinationAccountNumber: buyer.bankAccountNumber,
         destinationAccountName: buyer.bankAccountName,
@@ -70,9 +72,14 @@ export async function POST(
             ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
           },
         }),
-        // The sale fell through — put the listing back on the market.
+        // The sale fell through — put every item's listing back on the market.
         ...(isComplete
-          ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "ACTIVE" } })]
+          ? [
+              prisma.listing.updateMany({
+                where: { id: { in: order.items.map((item) => item.listingId) } },
+                data: { status: "ACTIVE" },
+              }),
+            ]
           : []),
       ]);
 
@@ -81,7 +88,7 @@ export async function POST(
           userId: order.sellerId,
           type: "REFUND_ISSUED",
           title: "Buyer refunded",
-          body: `The buyer was refunded for "${order.listing.title}" — you didn't ship in time.`,
+          body: `The buyer was refunded for "${title}" — you didn't ship in time.`,
           link: `/orders/${order.id}`,
         });
       } else {
@@ -89,13 +96,13 @@ export async function POST(
           userId: order.sellerId,
           type: "REFUND_PENDING",
           title: "Buyer requested a refund",
-          body: `A refund for "${order.listing.title}" is pending authorization.`,
+          body: `A refund for "${title}" is pending authorization.`,
           link: `/orders/${order.id}`,
         });
         await notifyAdmins({
           type: "REFUND_NEEDS_AUTH",
           title: "Refund needs OTP authorization",
-          body: `Refund for "${order.listing.title}" is pending authorization.`,
+          body: `Refund for "${title}" is pending authorization.`,
           link: "/dashboard?tab=payouts",
         });
       }

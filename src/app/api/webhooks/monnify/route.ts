@@ -33,9 +33,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Always respond quickly and acknowledge — we re-verify authoritatively via
-    // the Verify Transaction API below rather than trusting the webhook body,
-    // per Monnify's own guidance.
+    // Always acknowledge quickly — we re-verify authoritatively via the
+    // Verify Transaction API below rather than trusting the webhook body.
     if (!paymentReference) {
       return NextResponse.json({ received: true });
     }
