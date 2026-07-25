@@ -40,7 +40,10 @@ model User {
   id                String   @id @default(cuid())
   name              String
   email             String   @unique
-  passwordHash      String
+  passwordHash      String?
+  // Set once a password-holding account confirms ownership via password
+  // login after a blocked "Continue with Google" attempt for its email.
+  googleLinkedAt    DateTime?
   role              Role     @default(USER)
   image             String?
 
