@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { TbCircleCheck } from "react-icons/tb";
 
 import { auth } from "@/lib/auth";
@@ -11,6 +12,11 @@ import { orderStatusCopy } from "@/lib/status";
 import { PageContainer } from "@/components/page-container";
 
 export const dynamic = "force-dynamic";
+
+const orderInclude = {
+  items: { include: { listing: { select: { title: true, imageUrls: true } } } },
+  seller: { select: { name: true } },
+} as const;
 
 export default async function CartCheckoutSuccessPage({
   searchParams,
@@ -24,7 +30,7 @@ export default async function CartCheckoutSuccessPage({
 
   let orders = await prisma.order.findMany({
     where: { monnifyPaymentReference: paymentReference, buyerId: session.user.id },
-    include: { listing: { select: { title: true, imageUrls: true } }, seller: { select: { name: true } } },
+    include: orderInclude,
     orderBy: { createdAt: "asc" },
   });
 
@@ -40,13 +46,14 @@ export default async function CartCheckoutSuccessPage({
     }
     orders = await prisma.order.findMany({
       where: { monnifyPaymentReference: paymentReference, buyerId: session.user.id },
-      include: { listing: { select: { title: true, imageUrls: true } }, seller: { select: { name: true } } },
+      include: orderInclude,
       orderBy: { createdAt: "asc" },
     });
   }
 
   const allFunded = orders.every((order) => order.status !== "AWAITING_PAYMENT");
   const totalKobo = orders.reduce((sum, order) => sum + order.amountKobo, 0n);
+  const totalItems = orders.reduce((sum, order) => sum + order.items.length, 0);
 
   return (
     <PageContainer className="py-6 sm:py-8">
@@ -56,7 +63,7 @@ export default async function CartCheckoutSuccessPage({
             <TbCircleCheck className="size-10 text-brand" />
             <h1 className="font-display text-2xl font-bold tracking-tight">Payment received</h1>
             <p className="text-sm text-muted-foreground">
-              {orders.length} item{orders.length === 1 ? "" : "s"} for {formatNaira(totalKobo)} — funds are held in
+              {totalItems} item{totalItems === 1 ? "" : "s"} for {formatNaira(totalKobo)} — funds are held in
               escrow until each seller ships and you confirm.
             </p>
           </>
@@ -78,16 +85,31 @@ export default async function CartCheckoutSuccessPage({
             <Link
               key={order.id}
               href={`/orders/${order.id}`}
-              className="flex items-center justify-between rounded-2xl border p-4 transition-colors hover:bg-muted/50"
+              className="block rounded-2xl border p-4 transition-colors hover:bg-muted/50"
             >
-              <div>
-                <p className="font-medium">{order.listing.title}</p>
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Sold by {order.seller.name}</p>
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-sm font-medium">{formatNaira(order.amountKobo)}</span>
+                  <Badge className="rounded-full">{copy.label}</Badge>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="font-display text-sm font-medium">{formatNaira(order.amountKobo)}</span>
-                <Badge className="rounded-full">{copy.label}</Badge>
-              </div>
+              <ul className="mt-3 space-y-2">
+                {order.items.map((item) => (
+                  <li key={item.id} className="flex items-center gap-3">
+                    {item.listing.imageUrls[0] && (
+                      <Image
+                        src={item.listing.imageUrls[0]}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="size-9 shrink-0 rounded-lg object-cover"
+                      />
+                    )}
+                    <span className="text-sm font-medium">{item.listing.title}</span>
+                  </li>
+                ))}
+              </ul>
             </Link>
           );
         })}

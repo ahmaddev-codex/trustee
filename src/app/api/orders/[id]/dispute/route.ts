@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]/dispute">) {
@@ -21,7 +22,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
   try {
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { listing: { select: { title: true } } },
+      include: { items: { include: { listing: { select: { title: true } } } } },
     });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -40,18 +41,19 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
       prisma.order.update({ where: { id }, data: { status: "DISPUTED" } }),
     ]);
 
+    const title = orderSummaryTitle(order.items);
     await Promise.all([
       notify({
         userId: order.sellerId,
         type: "DISPUTE_RAISED",
         title: "A dispute was raised against your sale",
-        body: `The buyer raised a dispute for "${order.listing.title}" — an admin will review it.`,
+        body: `The buyer raised a dispute for "${title}" — an admin will review it.`,
         link: `/orders/${order.id}`,
       }),
       notifyAdmins({
         type: "DISPUTE_RAISED",
         title: "New dispute raised",
-        body: `A dispute was raised for "${order.listing.title}".`,
+        body: `A dispute was raised for "${title}".`,
         link: "/dashboard?tab=disputes",
       }),
     ]);

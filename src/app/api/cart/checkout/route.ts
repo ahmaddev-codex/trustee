@@ -3,11 +3,9 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { computePlatformFeeKobo } from "@/lib/fees";
+import { reserveAndCreateOrders, ListingUnavailableError } from "@/lib/create-orders";
 import { koboToNairaAmount } from "@/lib/money";
 import { initializeTransaction, MonnifyError } from "@/lib/monnify";
-
-const LISTING_UNAVAILABLE = "LISTING_UNAVAILABLE";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -22,9 +20,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Only listings that are actually in the buyer's cart can be checked out —
-    // this also confirms none of them are the buyer's own listing (cart adds
-    // already reject that).
+    // Only listings actually in the buyer's cart can be checked out (cart
+    // adds already reject the buyer's own listings).
     const cartItems = await prisma.cartItem.findMany({
       where: { userId: session.user.id, listingId: { in: listingIds } },
       include: { listing: true },
@@ -49,34 +46,19 @@ export async function POST(request: Request) {
 
     const paymentReference = `trustee-cart-${randomUUID()}`;
 
-    // Reserve every listing and create every order atomically — if any listing
-    // was bought out from under this cart between page-load and checkout, the
-    // whole checkout rolls back rather than partially succeeding.
+    // Reserve every listing and create one order per seller, atomically — if
+    // any listing sold out from under this cart, the whole checkout rolls back.
     const orders = await prisma.$transaction(async (tx) => {
-      const created = [];
-      for (const item of cartItems) {
-        const reserved = await tx.listing.updateMany({
-          where: { id: item.listing.id, status: "ACTIVE" },
-          data: { status: "SOLD" },
-        });
-        if (reserved.count === 0) {
-          throw new Error(LISTING_UNAVAILABLE);
-        }
-
-        const platformFeeKobo = computePlatformFeeKobo(item.listing.priceKobo);
-        created.push(
-          await tx.order.create({
-            data: {
-              listingId: item.listing.id,
-              buyerId: session.user.id,
-              sellerId: item.listing.sellerId,
-              amountKobo: item.listing.priceKobo,
-              platformFeeKobo,
-              monnifyPaymentReference: paymentReference,
-            },
-          }),
-        );
-      }
+      const created = await reserveAndCreateOrders(
+        tx,
+        session.user.id,
+        cartItems.map((item) => ({
+          listingId: item.listing.id,
+          sellerId: item.listing.sellerId,
+          priceKobo: item.listing.priceKobo,
+        })),
+        paymentReference,
+      );
 
       await tx.cartItem.deleteMany({
         where: { userId: session.user.id, listingId: { in: listingIds } },
@@ -93,7 +75,7 @@ export async function POST(request: Request) {
         customerName: session.user.name ?? "Trustee buyer",
         customerEmail: session.user.email ?? "",
         paymentReference,
-        paymentDescription: `${orders.length} item(s) from your cart`,
+        paymentDescription: `${cartItems.length} item(s) from your cart`,
         redirectUrl: `${process.env.NEXTAUTH_URL}/cart/checkout-success?ref=${encodeURIComponent(paymentReference)}`,
       });
 
@@ -121,7 +103,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status: 502 });
     }
   } catch (error) {
-    if (error instanceof Error && error.message === LISTING_UNAVAILABLE) {
+    if (error instanceof ListingUnavailableError) {
       return NextResponse.json(
         { error: "One of the selected items was just bought by someone else. Refresh your cart and try again." },
         { status: 409 },

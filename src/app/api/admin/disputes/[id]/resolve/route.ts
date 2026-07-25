@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { koboToNairaAmount } from "@/lib/money";
 import { initiateSingleTransfer, MonnifyError } from "@/lib/monnify";
+import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(
@@ -28,7 +29,13 @@ export async function POST(
     const dispute = await prisma.dispute.findUnique({
       where: { id },
       include: {
-        order: { include: { buyer: true, seller: true, listing: { select: { title: true } } } },
+        order: {
+          include: {
+            buyer: true,
+            seller: true,
+            items: { include: { listing: { select: { title: true } } } },
+          },
+        },
       },
     });
     if (!dispute || dispute.status !== "OPEN") {
@@ -36,6 +43,7 @@ export async function POST(
     }
 
     const { order } = dispute;
+    const title = orderSummaryTitle(order.items);
     const beneficiary = resolution === "RELEASE" ? order.seller : order.buyer;
     if (!beneficiary.bankAccountNumber || !beneficiary.bankCode || !beneficiary.bankAccountName) {
       return NextResponse.json(
@@ -51,7 +59,7 @@ export async function POST(
       const transfer = await initiateSingleTransfer({
         amount: koboToNairaAmount(amountKobo),
         reference,
-        narration: `Trustee dispute resolution — ${order.listing.title}`,
+        narration: `Trustee dispute resolution — ${title}`,
         destinationBankCode: beneficiary.bankCode,
         destinationAccountNumber: beneficiary.bankAccountNumber,
         destinationAccountName: beneficiary.bankAccountName,
@@ -87,10 +95,15 @@ export async function POST(
               : {}),
           },
         }),
-        // If the resolution is a refund, the sale fell through — put the
-        // listing back on the market.
+        // If the resolution is a refund, the sale fell through — put every
+        // item's listing back on the market.
         ...(isComplete && targetStatus === "REFUNDED"
-          ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "ACTIVE" as const } })]
+          ? [
+              prisma.listing.updateMany({
+                where: { id: { in: order.items.map((item) => item.listingId) } },
+                data: { status: "ACTIVE" as const },
+              }),
+            ]
           : []),
       ]);
 
@@ -104,14 +117,14 @@ export async function POST(
             userId: order.buyerId,
             type: "DISPUTE_RESOLVED",
             title: "Dispute resolved",
-            body: `The dispute for "${order.listing.title}" was resolved — funds were ${outcome}.`,
+            body: `The dispute for "${title}" was resolved — funds were ${outcome}.`,
             link: `/orders/${order.id}`,
           }),
           notify({
             userId: order.sellerId,
             type: "DISPUTE_RESOLVED",
             title: "Dispute resolved",
-            body: `The dispute for "${order.listing.title}" was resolved — funds were ${outcome}.`,
+            body: `The dispute for "${title}" was resolved — funds were ${outcome}.`,
             link: `/orders/${order.id}`,
           }),
         ]);
@@ -121,20 +134,20 @@ export async function POST(
             userId: order.buyerId,
             type: "DISPUTE_RESOLUTION_PENDING",
             title: "Dispute resolution pending authorization",
-            body: `The resolution for "${order.listing.title}" is pending admin authorization.`,
+            body: `The resolution for "${title}" is pending admin authorization.`,
             link: `/orders/${order.id}`,
           }),
           notify({
             userId: order.sellerId,
             type: "DISPUTE_RESOLUTION_PENDING",
             title: "Dispute resolution pending authorization",
-            body: `The resolution for "${order.listing.title}" is pending admin authorization.`,
+            body: `The resolution for "${title}" is pending admin authorization.`,
             link: `/orders/${order.id}`,
           }),
           notifyAdmins({
             type: "DISPUTE_RESOLUTION_NEEDS_AUTH",
             title: "Dispute resolution needs OTP authorization",
-            body: `Resolving the dispute for "${order.listing.title}" is pending authorization.`,
+            body: `Resolving the dispute for "${title}" is pending authorization.`,
             link: "/dashboard?tab=payouts",
           }),
         ]);

@@ -20,7 +20,7 @@ export async function POST(
   try {
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { seller: true, listing: { select: { title: true } } },
+      include: { seller: true, items: { include: { listing: { select: { title: true, imageUrls: true } } } } },
     });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });

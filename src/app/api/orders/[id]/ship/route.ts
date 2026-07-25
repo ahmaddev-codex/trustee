@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { autoReleaseDeadline } from "@/lib/escrow";
 import { serializeOrder } from "@/lib/serialize";
+import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify } from "@/lib/notifications";
 
 export async function POST(_request: Request, ctx: RouteContext<"/api/orders/[id]/ship">) {
@@ -17,7 +18,7 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/orders/[id
   try {
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { listing: { select: { title: true } } },
+      include: { items: { include: { listing: { select: { title: true } } } } },
     });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -44,7 +45,7 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/orders/[id
       userId: order.buyerId,
       type: "ORDER_SHIPPED",
       title: "Item shipped",
-      body: `"${order.listing.title}" is on its way — confirm receipt once it arrives.`,
+      body: `"${orderSummaryTitle(order.items)}" is on its way — confirm receipt once it arrives.`,
       link: `/orders/${order.id}`,
     });
 

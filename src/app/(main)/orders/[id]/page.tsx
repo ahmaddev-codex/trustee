@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { TbCircleCheck, TbCircle, TbShieldExclamation, TbArrowLeft } from "react-icons/tb";
 
+import Image from "next/image";
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatNaira } from "@/lib/money";
@@ -9,10 +11,17 @@ import { verifyTransactionByPaymentReference } from "@/lib/monnify";
 import { autoReleaseDeadline, refundEligibleAt } from "@/lib/escrow";
 import { releaseFundsToSeller } from "@/lib/release";
 import { orderStatusCopy, autoReleaseNote, refundEligibleNote } from "@/lib/status";
+import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify } from "@/lib/notifications";
 import { Badge } from "@/components/ui/badge";
 import { OrderActions } from "./order-actions";
 import { PageContainer } from "@/components/page-container";
+
+const orderInclude = {
+  items: { include: { listing: { select: { title: true, imageUrls: true } } } },
+  buyer: { select: { id: true, name: true } },
+  seller: { select: { id: true, name: true } },
+} as const;
 
 export const dynamic = "force-dynamic";
 
@@ -40,11 +49,7 @@ export default async function OrderDetailPage({
 
   let order = await prisma.order.findUnique({
     where: { id },
-    include: {
-      listing: { select: { title: true, imageUrls: true } },
-      buyer: { select: { id: true, name: true } },
-      seller: { select: { id: true, name: true } },
-    },
+    include: orderInclude,
   });
 
   if (!order) notFound();
@@ -63,17 +68,13 @@ export default async function OrderDetailPage({
         order = await prisma.order.update({
           where: { id: order.id },
           data: { status: "FUNDED", fundedAt: new Date() },
-          include: {
-            listing: { select: { title: true, imageUrls: true } },
-            buyer: { select: { id: true, name: true } },
-            seller: { select: { id: true, name: true } },
-          },
+          include: orderInclude,
         });
         await notify({
           userId: order.sellerId,
           type: "ORDER_FUNDED",
           title: "Your item sold",
-          body: `Payment received for "${order.listing.title}" — mark it shipped when it's on its way.`,
+          body: `Payment received for "${orderSummaryTitle(order.items)}" — mark it shipped when it's on its way.`,
           link: `/orders/${order.id}`,
         });
       }
@@ -82,10 +83,8 @@ export default async function OrderDetailPage({
     }
   }
 
-  // Same belt-and-suspenders pattern as above: if the buyer never confirms or
-  // disputes, whoever next opens this page past the auto-release deadline
-  // triggers the payout automatically instead of the funds sitting in escrow
-  // forever.
+  // Same belt-and-suspenders pattern: if the buyer never confirms or
+  // disputes, the next page load past the auto-release deadline triggers payout automatically.
   if (
     order.status === "SHIPPED" &&
     order.autoReleaseAt &&
@@ -94,7 +93,10 @@ export default async function OrderDetailPage({
     try {
       const releasable = await prisma.order.findUnique({
         where: { id: order.id },
-        include: { seller: true, listing: { select: { title: true } } },
+        include: {
+          seller: true,
+          items: { include: { listing: { select: { title: true, imageUrls: true } } } },
+        },
       });
       if (
         releasable &&
@@ -104,14 +106,7 @@ export default async function OrderDetailPage({
         releasable.seller.bankAccountName
       ) {
         await releaseFundsToSeller(releasable);
-        order = await prisma.order.findUnique({
-          where: { id },
-          include: {
-            listing: { select: { title: true, imageUrls: true } },
-            buyer: { select: { id: true, name: true } },
-            seller: { select: { id: true, name: true } },
-          },
-        });
+        order = await prisma.order.findUnique({ where: { id }, include: orderInclude });
       }
     } catch {
       // Monnify unreachable, disbursements not enabled yet, or seller has no
@@ -136,7 +131,7 @@ export default async function OrderDetailPage({
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">
-            {order.listing.title}
+            {orderSummaryTitle(order.items)}
           </h1>
           <p className="text-sm text-muted-foreground">
             {isBuyer ? `Sold by ${order.seller.name}` : `Bought by ${order.buyer.name}`}
@@ -187,9 +182,31 @@ export default async function OrderDetailPage({
       <div className="rounded-2xl border p-5">
         <p className="text-muted-foreground">{copy.description}</p>
 
+        {order.items.length > 1 && (
+          <ul className="mt-4 space-y-2 border-b pb-4">
+            {order.items.map((item) => (
+              <li key={item.id} className="flex items-center gap-3">
+                {item.listing.imageUrls[0] && (
+                  <Image
+                    src={item.listing.imageUrls[0]}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="size-10 shrink-0 rounded-lg object-cover"
+                  />
+                )}
+                <span className="text-sm font-medium">{item.listing.title}</span>
+                <span className="ml-auto text-sm text-muted-foreground">
+                  {formatNaira(item.priceKobo)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-muted-foreground">Item price</dt>
+            <dt className="text-muted-foreground">{order.items.length > 1 ? "Items total" : "Item price"}</dt>
             <dd className="font-display font-medium">{formatNaira(order.amountKobo)}</dd>
           </div>
           <div>
