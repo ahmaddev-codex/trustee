@@ -5,9 +5,8 @@ export const STORAGE_BUCKET =
 
 let cached: SupabaseClient | undefined;
 
-// Service-role client — server-only, used to upload listing photos.
-// Never import this from client components. Lazily constructed so the app
-// can still build/run before Supabase credentials are configured.
+// Service-role client — server-only, used to upload listing photos. Lazily
+// constructed so the app can build before Supabase credentials are set.
 export function getSupabaseAdmin(): SupabaseClient {
   if (cached) return cached;
 

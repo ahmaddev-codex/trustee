@@ -36,10 +36,8 @@ export function MarketplaceFilters({
   hasFilters: boolean;
 }) {
   const router = useRouter();
-  // Controlled so the trigger's displayed label always matches the current
-  // sort — the rest of the form stays uncontrolled, but this component is
-  // remounted (via `key` in the parent) whenever the URL's filters change, so
-  // this still starts fresh instead of going stale after "Clear filters".
+  // Controlled so the trigger's label always matches the current sort — the
+  // component remounts on filter changes, so this starts fresh, not stale.
   const [sortValue, setSortValue] = useState(sort);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {

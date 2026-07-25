@@ -1,6 +1,5 @@
-// Full-page transition screen for moments with a real wait on another
-// system (Monnify checkout hand-off, auth) — not for ordinary route loads,
-// which already get content-shaped skeletons via loading.tsx.
+// Full-page transition for moments with a real wait on another system
+// (Monnify hand-off, auth) — not ordinary route loads (those use loading.tsx).
 export function BrandLoader({ message }: { message?: string }) {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-[var(--brand-deep)] text-white">

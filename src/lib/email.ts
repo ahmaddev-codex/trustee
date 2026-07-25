@@ -10,9 +10,7 @@ export class EmailError extends Error {
 }
 
 // Hand-rolled Resend API call (same pattern as groq.ts/monnify/client.ts) —
-// no SDK needed for a single endpoint. Resend's "onboarding@resend.dev"
-// sender works without a verified domain, so this is usable immediately with
-// just an API key (see docs/action-points.md).
+// no SDK needed for a single endpoint (see docs/action-points.md).
 export async function sendEmail(input: {
   to: string;
   subject: string;

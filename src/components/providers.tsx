@@ -12,10 +12,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     () =>
       new QueryClient({
         defaultOptions: {
-          // Every useMutation call site in this app already shows its own,
-          // more specific error toast — a global mutations.onError here would
-          // run in *addition* to those (TanStack Query calls both), stacking
-          // a duplicate generic toast on top of every real one.
+          // Every mutation call site already shows its own error toast; a
+          // global onError here would duplicate it (TanStack Query calls both).
           queries: { retry: 1, staleTime: 30_000 },
         },
       }),

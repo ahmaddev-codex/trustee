@@ -5,9 +5,8 @@ import { forgotPasswordSchema } from "@/lib/validations/auth";
 import { generateResetToken } from "@/lib/password-reset";
 import { sendEmail } from "@/lib/email";
 
-// Always responds with the same generic message whether or not the email is
-// registered — confirming/denying an account's existence here would let an
-// attacker enumerate signups.
+// Always responds with the same generic message regardless of whether the
+// email is registered, to prevent signup enumeration.
 const GENERIC_MESSAGE =
   "If an account exists for that email, we've sent a password reset link.";
 

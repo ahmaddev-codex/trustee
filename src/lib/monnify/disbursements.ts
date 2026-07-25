@@ -26,9 +26,8 @@ export interface TransferResult {
   amount: number;
 }
 
-// Requires disbursements to be enabled on the Monnify account (contact
-// integration-support@monnify.com) and MONNIFY_WALLET_ACCOUNT_NUMBER to be
-// set to the merchant's Monnify wallet account number from the dashboard.
+// Requires disbursements enabled on the Monnify account and
+// MONNIFY_WALLET_ACCOUNT_NUMBER set to the merchant's wallet account.
 export async function initiateSingleTransfer(
   input: InitiateSingleTransferInput,
 ): Promise<TransferResult> {
@@ -47,13 +46,9 @@ export async function initiateSingleTransfer(
   });
 }
 
-// NOTE: the /validate-otp, /resend-otp, and /summary paths below are based
-// on Monnify's documented naming ("Authorize Transfer (Single) API", "Resend
-// OTP API", "Single Transfer Status API") but weren't independently
-// confirmed against a live call — disbursements weren't yet enabled on this
-// account's sandbox key at the time of writing. Confirm these once
-// integration-support@monnify.com has enabled disbursements (see
-// docs/action-points.md).
+// NOTE: /validate-otp, /resend-otp, /summary are based on Monnify's docs but
+// unconfirmed against a live call — disbursements weren't enabled on this
+// sandbox key yet. Confirm once disbursements are enabled (see docs/action-points.md).
 export async function authorizeSingleTransfer(
   reference: string,
   authorizationCode: string,
