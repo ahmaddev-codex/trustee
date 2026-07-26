@@ -1,4 +1,4 @@
-// Centralized query-key registry — do not construct query keys inline elsewhere.
+// Centralized query-key registry - do not construct query keys inline elsewhere.
 export const queryKeys = {
   notifications: {
     all: () => ["notifications"] as const,

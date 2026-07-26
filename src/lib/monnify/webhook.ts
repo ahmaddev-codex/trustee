@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 
 // Monnify signs webhook bodies with SHA-512(secretKey + body) in the
-// `monnify-signature` header — sandbox never sends it, so skip outside production.
+// `monnify-signature` header - sandbox never sends it, so skip outside production.
 export function isValidWebhookSignature(
   rawBody: string,
   signatureHeader: string | null,

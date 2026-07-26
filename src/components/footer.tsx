@@ -14,7 +14,7 @@ export function Footer() {
             <Image src="/trustee-logo-full-dark.svg" alt="Trustee" width={118} height={24} />
           </Link>
           <p className="mt-3 max-w-xs text-white/60">
-            Escrow for P2P classifieds — payments are held until the buyer confirms receipt, so
+            Escrow for P2P classifieds - payments are held until the buyer confirms receipt, so
             no one has to trust a stranger with money upfront.
           </p>
         </div>

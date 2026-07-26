@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
 
 const OPEN_ORDER_STATUSES = ["AWAITING_PAYMENT", "FUNDED", "SHIPPED", "DISPUTED"] as const;
 // Money that has actually moved (paid in) but hasn't been resolved either
-// way yet — released to the seller or refunded to the buyer.
+// way yet - released to the seller or refunded to the buyer.
 const IN_ESCROW_STATUSES = ["FUNDED", "SHIPPED", "DISPUTED"] as const;
 const ADMIN_TABS = ["payouts", "disputes", "flagged", "settings"] as const;
 const USER_TABS = [
@@ -67,7 +67,7 @@ export default async function DashboardPage({
     ? (rawRange as (typeof RANGE_OPTIONS)[number]["value"])
     : "all";
 
-  // Admins run escrow operations, not buy/sell — they get an entirely
+  // Admins run escrow operations, not buy/sell - they get an entirely
   // different set of tabs and never touch the listings/buying/selling queries.
   if (isAdmin) {
     const tab = (ADMIN_TABS as readonly string[]).includes(rawTab ?? "")
@@ -492,7 +492,7 @@ async function UserDashboard({
     prisma.listing.count({ where: { sellerId: userId, status: "ACTIVE" } }),
     prisma.order.count({ where: { buyerId: userId, status: { in: [...OPEN_ORDER_STATUSES] } } }),
     prisma.order.count({ where: { sellerId: userId, status: { in: [...OPEN_ORDER_STATUSES] } } }),
-    // In sales: money landed from released sales, net of platform fee — not
+    // In sales: money landed from released sales, net of platform fee - not
     // what's still in escrow, and not netted against buyer spend.
     prisma.order.aggregate({
       where: { sellerId: userId, status: "RELEASED" },
@@ -516,7 +516,7 @@ async function UserDashboard({
     (sellerEscrow._sum.amountKobo ?? 0n) -
     (sellerEscrow._sum.platformFeeKobo ?? 0n);
 
-  // One chronological ledger across both roles — a purchase is money out,
+  // One chronological ledger across both roles - a purchase is money out,
   // a sale is money in (price minus platform fee).
   const transactions = [
     ...buying.map((order) => ({
@@ -541,7 +541,7 @@ async function UserDashboard({
     .filter((t) => !rangeCutoff || t.date >= rangeCutoff)
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  // Same idea, but only the orders where money is still parked in escrow —
+  // Same idea, but only the orders where money is still parked in escrow -
   // paid in, not yet released to the seller or refunded to the buyer.
   const inEscrow = [
     ...buying
@@ -633,7 +633,7 @@ async function UserDashboard({
             )
           ) : (
             listings.map((listing) => (
-              // Plain <a>, not <Link> — see note on the admin search results above.
+              // Plain <a>, not <Link> - see note on the admin search results above.
               <a key={listing.id} href={`/listings/${listing.id}`} className="block">
                 <div className="flex items-center justify-between gap-3 py-4 hover:bg-muted/40">
                   <div className="flex items-center gap-3">

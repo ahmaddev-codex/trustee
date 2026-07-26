@@ -21,7 +21,7 @@ export interface ListingDetailData {
 }
 
 // Shared by the real /listings/[id] page and its intercepted modal route.
-// Excludes outer page chrome (wrapper, back link) — callers own that.
+// Excludes outer page chrome (wrapper, back link) - callers own that.
 export function ListingDetailContent({
   listing,
   isAuthed,

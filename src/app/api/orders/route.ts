@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "You can't buy your own listing" }, { status: 400 });
     }
 
-    // An abandoned checkout can leave a listing reserved with no paid order —
+    // An abandoned checkout can leave a listing reserved with no paid order -
     // free it (and any sibling listings from the same stale order) once the window passes.
     if (listing.status !== "ACTIVE") {
       const staleOrder = await prisma.order.findFirst({
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     const paymentReference = `trustee-buynow-${randomUUID()}`;
 
-    // Reserve the listing and create the order atomically — the status guard
+    // Reserve the listing and create the order atomically - the status guard
     // stops two buyers from paying for the same listing.
     const [order] = await prisma.$transaction((tx) =>
       reserveAndCreateOrders(
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ order: { id: order.id }, checkoutUrl }, { status: 201 });
     } catch (error) {
-      // Checkout never actually started — release the listing back to the
+      // Checkout never actually started - release the listing back to the
       // market along with cancelling the order.
       await prisma.$transaction([
         prisma.order.update({ where: { id: order.id }, data: { status: "CANCELLED" } }),

@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Trustee — Escrow for classifieds",
+  title: "Trustee - Escrow for classifieds",
   description:
     "Buy and sell safely: payments are held in escrow until the buyer confirms receipt.",
 };

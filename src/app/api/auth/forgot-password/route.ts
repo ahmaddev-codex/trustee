@@ -45,8 +45,8 @@ export async function POST(request: Request) {
 <p>This link expires in an hour. If you didn't request this, you can ignore this email.</p>`,
         });
       } catch (error) {
-        // Don't leak the delivery failure to the client — same reasoning as
-        // the generic response below — but log it so it's discoverable.
+        // Don't leak the delivery failure to the client - same reasoning as
+        // the generic response below - but log it so it's discoverable.
         console.error("Failed to send password reset email:", error);
       }
     }

@@ -34,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
-        // Reached via the "confirm your password to link Google" redirect —
+        // Reached via the "confirm your password to link Google" redirect -
         // this successful password login is the proof of ownership that unblocks Google sign-in.
         if (credentials?.confirmGoogleLink === "true" && !user.googleLinkedAt) {
           await prisma.user.update({
@@ -62,7 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider !== "google" || !profile?.email) return true;
 
       // A password-holding account must confirm ownership via password login
-      // first — otherwise a pre-registered email could hijack the real owner's Google sign-in.
+      // first - otherwise a pre-registered email could hijack the real owner's Google sign-in.
       const existing = await prisma.user.findUnique({
         where: { email: profile.email },
         select: { passwordHash: true, googleLinkedAt: true },
@@ -74,7 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     jwt: async ({ token, user, account, profile, trigger, session }) => {
       if (account?.provider === "google" && profile?.email) {
-        // No Prisma adapter — found/created by hand, same pattern as
+        // No Prisma adapter - found/created by hand, same pattern as
         // Credentials' own findUnique above. Google emails are pre-verified.
         let dbUser = await prisma.user.findUnique({ where: { email: profile.email } });
         if (!dbUser) {
@@ -87,7 +87,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             },
           });
         }
-        // Only a brand-new account gets Google's picture — existing accounts
+        // Only a brand-new account gets Google's picture - existing accounts
         // keep whatever image they already have.
         token.id = dbUser.id;
         token.role = dbUser.role;

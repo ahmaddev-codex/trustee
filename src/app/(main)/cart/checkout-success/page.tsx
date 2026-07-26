@@ -42,7 +42,7 @@ export default async function CartCheckoutSuccessPage({
     try {
       await fundOrdersByPaymentReference(paymentReference);
     } catch {
-      // Not paid yet, or Monnify is unreachable — the buyer can retry from here.
+      // Not paid yet, or Monnify is unreachable - the buyer can retry from here.
     }
     orders = await prisma.order.findMany({
       where: { monnifyPaymentReference: paymentReference, buyerId: session.user.id },
@@ -63,7 +63,7 @@ export default async function CartCheckoutSuccessPage({
             <TbCircleCheck className="size-10 text-brand" />
             <h1 className="font-display text-2xl font-bold tracking-tight">Payment received</h1>
             <p className="text-sm text-muted-foreground">
-              {totalItems} item{totalItems === 1 ? "" : "s"} for {formatNaira(totalKobo)} — funds are held in
+              {totalItems} item{totalItems === 1 ? "" : "s"} for {formatNaira(totalKobo)} - funds are held in
               escrow until each seller ships and you confirm.
             </p>
           </>
@@ -71,7 +71,7 @@ export default async function CartCheckoutSuccessPage({
           <>
             <h1 className="font-display text-2xl font-bold tracking-tight">Confirming your payment…</h1>
             <p className="text-sm text-muted-foreground">
-              We haven&apos;t heard back from Monnify yet. Refresh this page in a moment — you won&apos;t be
+              We haven&apos;t heard back from Monnify yet. Refresh this page in a moment - you won&apos;t be
               charged twice.
             </p>
           </>

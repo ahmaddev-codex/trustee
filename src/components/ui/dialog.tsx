@@ -31,7 +31,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       // Base UI skips a nested dialog's own backdrop by default, so a dialog
-      // over a dialog shows no dimming — force it so every dialog gets one.
+      // over a dialog shows no dimming - force it so every dialog gets one.
       forceRender
       className={cn(
         "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",

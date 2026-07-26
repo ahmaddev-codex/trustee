@@ -10,7 +10,7 @@ async function getAccessToken(): Promise<string> {
   const apiKey = process.env.MONNIFY_API_KEY;
   const secretKey = process.env.MONNIFY_SECRET_KEY;
   if (!apiKey || !secretKey) {
-    throw new Error("Monnify is not configured — set MONNIFY_API_KEY and MONNIFY_SECRET_KEY");
+    throw new Error("Monnify is not configured - set MONNIFY_API_KEY and MONNIFY_SECRET_KEY");
   }
 
   const basicAuth = Buffer.from(`${apiKey}:${secretKey}`).toString("base64");

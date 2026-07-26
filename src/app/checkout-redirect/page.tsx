@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 import { BrandLoader } from "@/components/brand-loader";
 
-// Monnify's checkout page is served from *.monnify.com — the only thing
+// Monnify's checkout page is served from *.monnify.com - the only thing
 // stopping ?url= from becoming an open redirect.
 function isTrustedCheckoutUrl(value: string): boolean {
   try {

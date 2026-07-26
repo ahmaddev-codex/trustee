@@ -1,4 +1,4 @@
-// Prisma schema for Trustee — P2P classifieds escrow powered by Monnify
+// Prisma schema for Trustee - P2P classifieds escrow powered by Monnify
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -86,7 +86,7 @@ model PasswordResetToken {
   userId    String
   user      User      @relation(fields: [userId], references: [id])
 
-  // SHA-256 hash of the raw token mailed to the user — never store the raw
+  // SHA-256 hash of the raw token mailed to the user - never store the raw
   // token, so a DB read alone can't be used to reset someone's password.
   tokenHash String    @unique
   expiresAt DateTime
@@ -171,7 +171,7 @@ model OrderItem {
   listingId String
   listing   Listing  @relation(fields: [listingId], references: [id])
 
-  // Snapshot of the listing's price at purchase time — Order.amountKobo is
+  // Snapshot of the listing's price at purchase time - Order.amountKobo is
   // the sum of these, computed once at creation.
   priceKobo BigInt
 

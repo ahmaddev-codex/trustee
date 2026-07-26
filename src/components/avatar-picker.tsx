@@ -19,7 +19,7 @@ export function AvatarPicker({
   const [seeds, setSeeds] = useState<string[]>([]);
   const [shuffleSpins, setShuffleSpins] = useState(0);
 
-  // Seeded client-side only — Math.random() during SSR would mismatch the
+  // Seeded client-side only - Math.random() during SSR would mismatch the
   // client's hydration pass.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: this is the one-time client-only randomization the mismatch note above describes, not state synced from props.

@@ -22,7 +22,7 @@ export default function MainError({
       <TbAlertTriangle className="mb-4 size-8 text-destructive" />
       <h1 className="font-display text-2xl font-bold tracking-tight">Something went wrong</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        We couldn&apos;t load this page. This is usually temporary — try again in a moment.
+        We couldn&apos;t load this page. This is usually temporary - try again in a moment.
       </p>
       <div className="mt-6 flex gap-3">
         <Button onClick={() => unstable_retry()}>Try again</Button>
