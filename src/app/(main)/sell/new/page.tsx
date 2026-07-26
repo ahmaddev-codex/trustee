@@ -179,7 +179,9 @@ export default function NewListingPage() {
                 onChange={(e) => {
                   const selected = Array.from(e.target.files ?? []);
                   if (selected.length > 6) {
-                    toast.error("Only the first 6 photos were kept — that's the max per listing.");
+                    toast.error("Photo limit reached", {
+                      description: "Only the first 6 photos were kept. 6 is the max per listing.",
+                    });
                   }
                   setFiles(selected.slice(0, 6));
                 }}

@@ -59,7 +59,7 @@ export async function POST(
       const transfer = await initiateSingleTransfer({
         amount: koboToNairaAmount(amountKobo),
         reference,
-        narration: `Trustee dispute resolution — ${title}`,
+        narration: `Trustee dispute resolution - ${title}`,
         destinationBankCode: beneficiary.bankCode,
         destinationAccountNumber: beneficiary.bankAccountNumber,
         destinationAccountName: beneficiary.bankAccountName,
@@ -95,7 +95,7 @@ export async function POST(
               : {}),
           },
         }),
-        // If the resolution is a refund, the sale fell through — put every
+        // If the resolution is a refund, the sale fell through - put every
         // item's listing back on the market.
         ...(isComplete && targetStatus === "REFUNDED"
           ? [
@@ -117,14 +117,14 @@ export async function POST(
             userId: order.buyerId,
             type: "DISPUTE_RESOLVED",
             title: "Dispute resolved",
-            body: `The dispute for "${title}" was resolved — funds were ${outcome}.`,
+            body: `The dispute for **${title}** was resolved. Funds were ${outcome}.`,
             link: `/orders/${order.id}`,
           }),
           notify({
             userId: order.sellerId,
             type: "DISPUTE_RESOLVED",
             title: "Dispute resolved",
-            body: `The dispute for "${title}" was resolved — funds were ${outcome}.`,
+            body: `The dispute for **${title}** was resolved. Funds were ${outcome}.`,
             link: `/orders/${order.id}`,
           }),
         ]);
@@ -134,20 +134,20 @@ export async function POST(
             userId: order.buyerId,
             type: "DISPUTE_RESOLUTION_PENDING",
             title: "Dispute resolution pending authorization",
-            body: `The resolution for "${title}" is pending admin authorization.`,
+            body: `The resolution for **${title}** is pending admin authorization.`,
             link: `/orders/${order.id}`,
           }),
           notify({
             userId: order.sellerId,
             type: "DISPUTE_RESOLUTION_PENDING",
             title: "Dispute resolution pending authorization",
-            body: `The resolution for "${title}" is pending admin authorization.`,
+            body: `The resolution for **${title}** is pending admin authorization.`,
             link: `/orders/${order.id}`,
           }),
           notifyAdmins({
             type: "DISPUTE_RESOLUTION_NEEDS_AUTH",
             title: "Dispute resolution needs OTP authorization",
-            body: `Resolving the dispute for "${title}" is pending authorization.`,
+            body: `Resolving the dispute for **${title}** is pending authorization.`,
             link: "/dashboard?tab=payouts",
           }),
         ]);

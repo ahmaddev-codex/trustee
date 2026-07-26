@@ -170,7 +170,9 @@ export function EditListingForm({
                 const selected = Array.from(e.target.files ?? []);
                 const room = MAX_PHOTOS - totalPhotos;
                 if (selected.length > room) {
-                  toast.error(`Only ${room} more photo(s) can be added — ${MAX_PHOTOS} max per listing.`);
+                  toast.error("Photo limit reached", {
+                    description: `Only ${room} more photo(s) can be added. ${MAX_PHOTOS} is the max per listing.`,
+                  });
                 }
                 setNewFiles((prev) => [...prev, ...selected.slice(0, room)]);
                 e.target.value = "";

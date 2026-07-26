@@ -24,11 +24,13 @@ export function ResolveDisputeForm({ disputeId }: { disputeId: string }) {
         body: JSON.stringify({ resolution }),
       }),
     onSuccess: (data) => {
-      toast.success(
-        data.pendingAuthorization
-          ? "Transfer started — authorize it below once the OTP arrives"
-          : "Dispute resolved",
-      );
+      if (data.pendingAuthorization) {
+        toast.success("Transfer started", {
+          description: "Authorize it below once the OTP arrives.",
+        });
+      } else {
+        toast.success("Dispute resolved");
+      }
       router.refresh();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),

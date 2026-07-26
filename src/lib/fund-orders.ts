@@ -3,7 +3,7 @@ import { verifyTransactionByPaymentReference } from "@/lib/monnify";
 import { orderSummaryTitle } from "@/lib/order-summary";
 import { notify } from "@/lib/notifications";
 
-// Flips every AWAITING_PAYMENT order sharing a payment reference to FUNDED —
+// Flips every AWAITING_PAYMENT order sharing a payment reference to FUNDED -
 // a cart checkout groups orders per seller, so one payment funds them all.
 export async function fundOrdersByPaymentReference(paymentReference: string) {
   const pending = await prisma.order.findMany({
@@ -27,7 +27,7 @@ export async function fundOrdersByPaymentReference(paymentReference: string) {
       userId: order.sellerId,
       type: "ORDER_FUNDED",
       title: "Your item sold",
-      body: `Payment received for "${orderSummaryTitle(order.items)}" — mark it shipped when it's on its way.`,
+      body: `Payment received for **${orderSummaryTitle(order.items)}**. Mark it shipped when it's on its way.`,
       link: `/orders/${order.id}`,
     });
   }
