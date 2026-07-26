@@ -21,7 +21,7 @@ export function ListingModal({ children }: { children: React.ReactNode }) {
       <DialogContent
         ref={contentRef}
         // Base UI's default focus lands on the Buy button near the bottom, dragging
-        // content down — focus the container itself so listings open scrolled to top.
+        // content down - focus the container itself so listings open scrolled to top.
         initialFocus={contentRef}
         className="sm:max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hide"
       >

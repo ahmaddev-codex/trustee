@@ -164,7 +164,7 @@ export function SettingsForm({
                   className="flex flex-wrap items-center gap-2"
                 >
                   <span className="text-xs font-medium text-brand">
-                    {pendingPreview ? "New photo selected" : "New avatar selected"} — click Save
+                    {pendingPreview ? "New photo selected" : "New avatar selected"} - click Save
                     to apply
                   </span>
                   <button

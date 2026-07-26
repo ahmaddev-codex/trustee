@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Always acknowledge quickly — we re-verify authoritatively via the
+    // Always acknowledge quickly - we re-verify authoritatively via the
     // Verify Transaction API below rather than trusting the webhook body.
     if (!paymentReference) {
       return NextResponse.json({ received: true });
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Failed to process Monnify webhook:", error);
-    // Monnify retries on non-2xx — acknowledge anyway since we've logged the
+    // Monnify retries on non-2xx - acknowledge anyway since we've logged the
     // failure and the order page's manual verify fallback can still recover it.
     return NextResponse.json({ received: true });
   }

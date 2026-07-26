@@ -43,11 +43,11 @@ export function OrderActions({
   const confirmReceipt = useMutation({
     mutationFn: () => post("confirm-receipt"),
     onSuccess: (data) => {
-      toast.success(
-        data.pendingAuthorization
-          ? "Payout started — awaiting authorization"
-          : "Payout released to the seller",
-      );
+      if (data.pendingAuthorization) {
+        toast.success("Payout started", { description: "Awaiting authorization." });
+      } else {
+        toast.success("Payout released to the seller");
+      }
       router.refresh();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -56,9 +56,11 @@ export function OrderActions({
   const requestRefund = useMutation({
     mutationFn: () => post("refund-request"),
     onSuccess: (data) => {
-      toast.success(
-        data.pendingAuthorization ? "Refund started — awaiting authorization" : "Refund sent",
-      );
+      if (data.pendingAuthorization) {
+        toast.success("Refund started", { description: "Awaiting authorization." });
+      } else {
+        toast.success("Refund sent");
+      }
       router.refresh();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -67,7 +69,7 @@ export function OrderActions({
   const raiseDispute = useMutation({
     mutationFn: () => post("dispute", { reason }),
     onSuccess: () => {
-      toast.success("Dispute raised — our team will review it");
+      toast.success("Dispute raised", { description: "Our team will review it." });
       router.refresh();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -76,7 +78,7 @@ export function OrderActions({
   if (status === "AWAITING_PAYMENT" && isBuyer) {
     return (
       <Button variant="outline" onClick={() => router.refresh()}>
-        I&apos;ve paid — check status
+        I&apos;ve paid - check status
       </Button>
     );
   }
@@ -96,7 +98,7 @@ export function OrderActions({
             trigger="Request a refund"
             triggerVariant="outline"
             title="Request a refund?"
-            description="The seller hasn't shipped yet. We'll refund your payment in full — this can't be undone."
+            description="The seller hasn't shipped yet. We'll refund your payment in full - this can't be undone."
             confirmLabel="Request refund"
             isPending={requestRefund.isPending}
             onConfirm={() => requestRefund.mutate()}
@@ -113,7 +115,7 @@ export function OrderActions({
           <ConfirmActionDialog
             trigger={confirmReceipt.isPending ? "Releasing…" : "Confirm receipt"}
             title="Confirm receipt?"
-            description="This releases the funds to the seller right away. Only confirm once you've checked the item and you're happy with it — this can't be undone."
+            description="This releases the funds to the seller right away. Only confirm once you've checked the item and you're happy with it - this can't be undone."
             confirmLabel="Confirm & release funds"
             isPending={confirmReceipt.isPending}
             onConfirm={() => confirmReceipt.mutate()}

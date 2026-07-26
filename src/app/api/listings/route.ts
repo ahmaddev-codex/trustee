@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         await notifyAdmins({
           type: "LISTING_FLAGGED",
           title: "Listing flagged for review",
-          body: `"${title}" was flagged: ${screen.reason ?? "possible scam signal"}`,
+          body: `**${title}** was flagged: ${screen.reason ?? "possible scam signal"}`,
           link: "/dashboard?tab=flagged",
         });
       }

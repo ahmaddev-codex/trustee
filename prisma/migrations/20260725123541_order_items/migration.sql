@@ -22,7 +22,7 @@ ALTER TABLE "order_items" ADD CONSTRAINT "order_items_orderId_fkey" FOREIGN KEY 
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- Backfill: one OrderItem per existing Order, reusing Order.id as the item's
--- id (safe/unique — every existing order had exactly one listing).
+-- id (safe/unique - every existing order had exactly one listing).
 INSERT INTO "order_items" ("id", "orderId", "listingId", "priceKobo", "createdAt")
 SELECT "id", "id", "listingId", "amountKobo", now() FROM "orders";
 

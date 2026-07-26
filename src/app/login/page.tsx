@@ -60,7 +60,7 @@ function LoginForm({ onRedirecting }: { onRedirecting: () => void }) {
       }
 
       onRedirecting();
-      // Hard navigation — router.push() can serve a stale pre-auth RSC
+      // Hard navigation - router.push() can serve a stale pre-auth RSC
       // cache for the destination, leaving users stuck until a manual refresh.
       window.location.href = searchParams.get("callbackUrl") ?? "/dashboard";
     } finally {
@@ -73,9 +73,8 @@ function LoginForm({ onRedirecting }: { onRedirecting: () => void }) {
       <CardContent className="pt-4">
         {linkEmail && (
           <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-            This email already has a password on file. Sign in below to confirm
-            it&apos;s you — we do this so no one else can hijack the account via
-            Google. Once confirmed, Continue with Google will work for it too.
+            Enter the password for <span className="font-medium">{linkEmail}</span> to
+            finish setting up Google sign-in for this account.
           </div>
         )}
 
@@ -97,13 +96,17 @@ function LoginForm({ onRedirecting }: { onRedirecting: () => void }) {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register("email")} />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
-          </div>
+          {linkEmail ? (
+            <input type="hidden" {...register("email")} />
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" {...register("email")} />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
@@ -143,7 +146,7 @@ export default function LoginPage() {
   const [redirecting, setRedirecting] = useState(false);
 
   // Google sign-in navigates away, so a browser-back can restore this page
-  // from bfcache with redirecting still frozen true — reset it on restore.
+  // from bfcache with redirecting still frozen true - reset it on restore.
   useEffect(() => {
     const onPageShow = (event: PageTransitionEvent) => {
       if (event.persisted) setRedirecting(false);
@@ -179,7 +182,7 @@ export default function LoginPage() {
 
         <div className="mt-4 flex items-center gap-2 border border-white/15 p-3 text-xs text-white/70">
           <TbLock className="size-4 shrink-0 text-lime" />
-          Every purchase is protected by escrow — sellers only get paid once you confirm receipt.
+          Every purchase is protected by escrow - sellers only get paid once you confirm receipt.
         </div>
       </div>
     </div>

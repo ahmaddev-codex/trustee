@@ -42,7 +42,7 @@ export function PayoutDetailsForm() {
     queryFn: () => apiFetch<SavedBankDetails>("/api/profile/bank-details"),
   });
 
-  // Seed the form from the saved account once, the first render after it loads —
+  // Seed the form from the saved account once, the first render after it loads -
   // React's documented pattern for adjusting state from external data without an effect.
   if (saved && !seeded) {
     setSeeded(true);

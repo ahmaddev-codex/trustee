@@ -66,7 +66,7 @@ export async function POST(
             resolvedAt: new Date(),
           },
         }),
-        // If this transfer refunds the buyer, the sale fell through — put
+        // If this transfer refunds the buyer, the sale fell through - put
         // every item's listing back on the market.
         ...(targetStatus === "REFUNDED"
           ? [
@@ -78,7 +78,7 @@ export async function POST(
           : []),
       ]);
 
-      // This transfer was pending OTP authorization — notify whoever was
+      // This transfer was pending OTP authorization - notify whoever was
       // told to expect it that it landed.
       const isDispute = reference.startsWith("dispute-");
       if (targetStatus === "RELEASED") {
@@ -86,7 +86,7 @@ export async function POST(
           userId: order.sellerId,
           type: "PAYOUT_RELEASED",
           title: "Payment released to you",
-          body: `Your payout for "${title}" has been sent.`,
+          body: `Your payout for **${title}** has been sent.`,
           link: `/orders/${order.id}`,
         });
         if (isDispute) {
@@ -94,7 +94,7 @@ export async function POST(
             userId: order.buyerId,
             type: "DISPUTE_RESOLVED",
             title: "Dispute resolved",
-            body: `The dispute for "${title}" was resolved — funds were released to the seller.`,
+            body: `The dispute for **${title}** was resolved. Funds were released to the seller.`,
             link: `/orders/${order.id}`,
           });
         }
@@ -103,7 +103,7 @@ export async function POST(
           userId: order.buyerId,
           type: "REFUND_ISSUED",
           title: "Refund sent",
-          body: `Your refund for "${title}" has been sent.`,
+          body: `Your refund for **${title}** has been sent.`,
           link: `/orders/${order.id}`,
         });
         await notify({
@@ -111,8 +111,8 @@ export async function POST(
           type: isDispute ? "DISPUTE_RESOLVED" : "REFUND_ISSUED",
           title: isDispute ? "Dispute resolved" : "Buyer refunded",
           body: isDispute
-            ? `The dispute for "${title}" was resolved — funds were refunded to the buyer.`
-            : `The buyer was refunded for "${title}".`,
+            ? `The dispute for **${title}** was resolved. Funds were refunded to the buyer.`
+            : `The buyer was refunded for **${title}**.`,
           link: `/orders/${order.id}`,
         });
       }

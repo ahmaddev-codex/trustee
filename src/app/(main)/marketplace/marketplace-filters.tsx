@@ -36,7 +36,7 @@ export function MarketplaceFilters({
   hasFilters: boolean;
 }) {
   const router = useRouter();
-  // Controlled so the trigger's label always matches the current sort — the
+  // Controlled so the trigger's label always matches the current sort - the
   // component remounts on filter changes, so this starts fresh, not stale.
   const [sortValue, setSortValue] = useState(sort);
 

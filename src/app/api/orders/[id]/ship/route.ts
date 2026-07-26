@@ -45,7 +45,7 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/orders/[id
       userId: order.buyerId,
       type: "ORDER_SHIPPED",
       title: "Item shipped",
-      body: `"${orderSummaryTitle(order.items)}" is on its way — confirm receipt once it arrives.`,
+      body: `**${orderSummaryTitle(order.items)}** is on its way. Confirm receipt once it arrives.`,
       link: `/orders/${order.id}`,
     });
 

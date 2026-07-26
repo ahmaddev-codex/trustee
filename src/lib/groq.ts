@@ -12,7 +12,7 @@ export class GroqError extends Error {
 async function groqJson<T>(systemPrompt: string, userPrompt: string): Promise<T> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    throw new GroqError("Groq is not configured — set GROQ_API_KEY", undefined);
+    throw new GroqError("Groq is not configured - set GROQ_API_KEY", undefined);
   }
 
   const res = await fetch(`${BASE_URL}/chat/completions`, {
@@ -67,7 +67,7 @@ export async function analyzeDispute(input: {
     "Given an order/dispute summary, suggest whether the admin should RELEASE funds to the seller, " +
     "REFUND the buyer, or mark it UNCLEAR if there isn't enough information to tell. " +
     'Respond with strict JSON only: {"suggestion": "RELEASE" | "REFUND" | "UNCLEAR", "reasoning": string}. ' +
-    "Keep reasoning to 2-3 sentences. This is a suggestion only — a human admin makes the final call.";
+    "Keep reasoning to 2-3 sentences. This is a suggestion only - a human admin makes the final call.";
 
   const user = [
     `Listing: ${input.listingTitle}`,
@@ -104,7 +104,7 @@ export async function screenListing(input: {
     "prices implausibly below market for the category, bait-and-switch or off-platform-payment wording, " +
     "counterfeit/prohibited goods, or vague descriptions typical of scam listings. " +
     'Respond with strict JSON only: {"flagged": boolean, "reason": string | null}. ' +
-    "Only flag listings with a real signal — most legitimate listings should NOT be flagged. " +
+    "Only flag listings with a real signal - most legitimate listings should NOT be flagged. " +
     "reason must be null when flagged is false, and a short (<=200 char) explanation when true.";
 
   const user = [

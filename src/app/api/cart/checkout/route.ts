@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     const paymentReference = `trustee-cart-${randomUUID()}`;
 
-    // Reserve every listing and create one order per seller, atomically — if
+    // Reserve every listing and create one order per seller, atomically - if
     // any listing sold out from under this cart, the whole checkout rolls back.
     const orders = await prisma.$transaction(async (tx) => {
       const created = await reserveAndCreateOrders(
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ checkoutUrl }, { status: 201 });
     } catch (error) {
-      // Checkout never actually started — release every reserved listing and
+      // Checkout never actually started - release every reserved listing and
       // cancel every order, same as the single-item flow's failure path.
       await prisma.$transaction([
         prisma.order.updateMany({

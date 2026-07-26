@@ -18,7 +18,7 @@ type ReleasableOrder = Order & {
 };
 
 // Shared by the buyer's "Confirm receipt" action and the auto-release check
-// once autoReleaseAt passes — both settle the same payout to the seller.
+// once autoReleaseAt passes - both settle the same payout to the seller.
 export async function releaseFundsToSeller(order: ReleasableOrder): Promise<ReleaseResult> {
   const { seller } = order;
   if (!seller.bankAccountNumber || !seller.bankCode || !seller.bankAccountName) {
@@ -32,7 +32,7 @@ export async function releaseFundsToSeller(order: ReleasableOrder): Promise<Rele
   const transfer = await initiateSingleTransfer({
     amount: koboToNairaAmount(payoutKobo),
     reference,
-    narration: `Trustee payout — ${title}`,
+    narration: `Trustee payout - ${title}`,
     destinationBankCode: seller.bankCode,
     destinationAccountNumber: seller.bankAccountNumber,
     destinationAccountName: seller.bankAccountName,
@@ -53,7 +53,7 @@ export async function releaseFundsToSeller(order: ReleasableOrder): Promise<Rele
       userId: order.sellerId,
       type: "PAYOUT_RELEASED",
       title: "Payment released to you",
-      body: `Your payout for "${title}" has been sent.`,
+      body: `Your payout for **${title}** has been sent.`,
       link: `/orders/${order.id}`,
     });
   } else {
@@ -61,13 +61,13 @@ export async function releaseFundsToSeller(order: ReleasableOrder): Promise<Rele
       userId: order.sellerId,
       type: "PAYOUT_PENDING",
       title: "Payout pending authorization",
-      body: `Your payout for "${title}" is awaiting admin authorization.`,
+      body: `Your payout for **${title}** is awaiting admin authorization.`,
       link: `/orders/${order.id}`,
     });
     await notifyAdmins({
       type: "PAYOUT_NEEDS_AUTH",
       title: "Payout needs OTP authorization",
-      body: `Payout for "${title}" is pending authorization.`,
+      body: `Payout for **${title}** is pending authorization.`,
       link: "/dashboard?tab=payouts",
     });
   }

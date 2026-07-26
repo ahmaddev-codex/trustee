@@ -47,13 +47,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[id]
         userId: order.sellerId,
         type: "DISPUTE_RAISED",
         title: "A dispute was raised against your sale",
-        body: `The buyer raised a dispute for "${title}" — an admin will review it.`,
+        body: `The buyer raised a dispute for **${title}**. An admin will review it.`,
         link: `/orders/${order.id}`,
       }),
       notifyAdmins({
         type: "DISPUTE_RAISED",
         title: "New dispute raised",
-        body: `A dispute was raised for "${title}".`,
+        body: `A dispute was raised for **${title}**.`,
         link: "/dashboard?tab=disputes",
       }),
     ]);

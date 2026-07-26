@@ -56,7 +56,7 @@ export async function POST(
       const transfer = await initiateSingleTransfer({
         amount: koboToNairaAmount(order.amountKobo),
         reference,
-        narration: `Trustee refund — ${title}`,
+        narration: `Trustee refund - ${title}`,
         destinationBankCode: buyer.bankCode,
         destinationAccountNumber: buyer.bankAccountNumber,
         destinationAccountName: buyer.bankAccountName,
@@ -72,7 +72,7 @@ export async function POST(
             ...(isComplete ? { status: "REFUNDED", refundedAt: new Date() } : {}),
           },
         }),
-        // The sale fell through — put every item's listing back on the market.
+        // The sale fell through - put every item's listing back on the market.
         ...(isComplete
           ? [
               prisma.listing.updateMany({
@@ -88,7 +88,7 @@ export async function POST(
           userId: order.sellerId,
           type: "REFUND_ISSUED",
           title: "Buyer refunded",
-          body: `The buyer was refunded for "${title}" — you didn't ship in time.`,
+          body: `The buyer was refunded for **${title}**. You didn't ship in time.`,
           link: `/orders/${order.id}`,
         });
       } else {
@@ -96,13 +96,13 @@ export async function POST(
           userId: order.sellerId,
           type: "REFUND_PENDING",
           title: "Buyer requested a refund",
-          body: `A refund for "${title}" is pending authorization.`,
+          body: `A refund for **${title}** is pending authorization.`,
           link: `/orders/${order.id}`,
         });
         await notifyAdmins({
           type: "REFUND_NEEDS_AUTH",
           title: "Refund needs OTP authorization",
-          body: `Refund for "${title}" is pending authorization.`,
+          body: `Refund for **${title}** is pending authorization.`,
           link: "/dashboard?tab=payouts",
         });
       }

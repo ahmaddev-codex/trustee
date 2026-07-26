@@ -15,7 +15,7 @@ async function main() {
 
   if (existing) {
     if (existing.role === "ADMIN") {
-      console.log(`${email} is already an admin — nothing to do.`);
+      console.log(`${email} is already an admin - nothing to do.`);
       return;
     }
     await prisma.user.update({ where: { email }, data: { role: "ADMIN" } });
@@ -27,7 +27,7 @@ async function main() {
   await prisma.user.create({
     data: { name, email, passwordHash, role: "ADMIN" },
   });
-  console.log(`Created admin user ${email} (password: ${password}) — log in at /login.`);
+  console.log(`Created admin user ${email} (password: ${password}) - log in at /login.`);
 }
 
 main()

@@ -50,7 +50,7 @@ export default function SignupPage() {
   };
 
   // A browser-back after Google sign-in fails can restore this page from
-  // bfcache with loading state still frozen true — reset it on restore.
+  // bfcache with loading state still frozen true - reset it on restore.
   useEffect(() => {
     const onPageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
@@ -92,7 +92,7 @@ export default function SignupPage() {
       });
 
       if (result?.error) {
-        toast.error("Account created — please log in");
+        toast.error("Account created", { description: "Please log in to continue." });
         router.push("/login");
         return;
       }
@@ -110,7 +110,7 @@ export default function SignupPage() {
 
   const goTo = (path: string) => {
     setWelcomeOpen(false);
-    // Hard navigation — router.push() can serve a stale pre-auth RSC
+    // Hard navigation - router.push() can serve a stale pre-auth RSC
     // cache for the destination, leaving users stuck until a manual refresh.
     window.location.href = path;
   };
@@ -197,7 +197,7 @@ export default function SignupPage() {
 
         <div className="mt-4 flex items-center gap-2 border border-white/15 p-3 text-xs text-white/70">
           <TbLock className="size-4 shrink-0 text-lime" />
-          Every purchase is protected by escrow — sellers only get paid once you confirm receipt.
+          Every purchase is protected by escrow - sellers only get paid once you confirm receipt.
         </div>
       </div>
 
@@ -218,7 +218,7 @@ export default function SignupPage() {
               Connect payout details
             </Button>
             <Button variant="ghost" onClick={() => goTo("/dashboard")}>
-              I&apos;ll do this later — take me to my dashboard
+              I&apos;ll do this later - take me to my dashboard
             </Button>
           </div>
         </DialogContent>

@@ -3,7 +3,7 @@
 import { motion, type Easing } from "framer-motion";
 
 // A real drop-and-bounce path: falls fast, bounces twice with decreasing
-// height, then settles — fires once via whileInView + once: true.
+// height, then settles - fires once via whileInView + once: true.
 function dropBounce(restY: number, delay = 0) {
   return {
     initial: { y: restY - 260, opacity: 0 },

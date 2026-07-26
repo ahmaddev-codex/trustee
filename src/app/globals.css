@@ -157,7 +157,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TOAST STYLING (light theme only) — light background with a soft shadow,
+   TOAST STYLING (light theme only) - light background with a soft shadow,
    colored left edge so success/warning/error read at a glance
    ═══════════════════════════════════════════════════════════════════════════ */
 @layer base {
@@ -175,7 +175,7 @@
 }
 
 @layer utilities {
-  /* Keeps scrolling but hides the scrollbar track/thumb — used by the
+  /* Keeps scrolling but hides the scrollbar track/thumb - used by the
      listing modal, which scrolls internally without needing to show it. */
   .scrollbar-hide {
     scrollbar-width: none;
@@ -212,7 +212,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   BRAND LOADER — two squeezing/rotating blocks in brand purple + lime, used
+   BRAND LOADER - two squeezing/rotating blocks in brand purple + lime, used
    for full-page transitions (checkout hand-off, auth) where there's a real
    wait for another system to respond.
    ═══════════════════════════════════════════════════════════════════════════ */

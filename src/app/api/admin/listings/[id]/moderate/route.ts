@@ -40,7 +40,7 @@ export async function POST(
         userId: listing.sellerId,
         type: "LISTING_REMOVED",
         title: "Your listing was removed",
-        body: `"${listing.title}" was taken down by a Trustee admin after review.`,
+        body: `**${listing.title}** was taken down by a Trustee admin after review.`,
         link: "/dashboard",
       });
     } else {
@@ -48,7 +48,7 @@ export async function POST(
         userId: listing.sellerId,
         type: "LISTING_CLEARED",
         title: "Your listing passed review",
-        body: `"${listing.title}" was reviewed and is live as normal.`,
+        body: `**${listing.title}** was reviewed and is live as normal.`,
         link: `/listings/${listing.id}`,
       });
     }

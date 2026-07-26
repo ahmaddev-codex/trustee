@@ -47,7 +47,7 @@ export async function initiateSingleTransfer(
 }
 
 // NOTE: /validate-otp, /resend-otp, /summary are based on Monnify's docs but
-// unconfirmed against a live call — disbursements weren't enabled on this
+// unconfirmed against a live call - disbursements weren't enabled on this
 // sandbox key yet. Confirm once disbursements are enabled (see docs/action-points.md).
 export async function authorizeSingleTransfer(
   reference: string,

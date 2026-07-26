@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
 
         <div className="mt-4 flex items-center gap-2 border border-white/15 p-3 text-xs text-white/70">
           <TbLock className="size-4 shrink-0 text-lime" />
-          Every purchase is protected by escrow — sellers only get paid once you confirm receipt.
+          Every purchase is protected by escrow - sellers only get paid once you confirm receipt.
         </div>
       </div>
     </div>

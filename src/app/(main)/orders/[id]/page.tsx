@@ -74,12 +74,12 @@ export default async function OrderDetailPage({
           userId: order.sellerId,
           type: "ORDER_FUNDED",
           title: "Your item sold",
-          body: `Payment received for "${orderSummaryTitle(order.items)}" — mark it shipped when it's on its way.`,
+          body: `Payment received for **${orderSummaryTitle(order.items)}**. Mark it shipped when it's on its way.`,
           link: `/orders/${order.id}`,
         });
       }
     } catch {
-      // Not paid yet, or Monnify is unreachable — the buyer can retry from here.
+      // Not paid yet, or Monnify is unreachable - the buyer can retry from here.
     }
   }
 
@@ -110,7 +110,7 @@ export default async function OrderDetailPage({
       }
     } catch {
       // Monnify unreachable, disbursements not enabled yet, or seller has no
-      // payout account — the buyer can still confirm manually once resolved.
+      // payout account - the buyer can still confirm manually once resolved.
     }
   }
 

@@ -55,7 +55,7 @@ const categoryShowcase: Record<(typeof listingCategories)[number], string> = {
 const faqs = [
   {
     q: "What if the item isn't what was described?",
-    a: "Raise a dispute before you confirm receipt. A Trustee admin looks at both sides and decides who gets paid — your money doesn't move until that's settled.",
+    a: "Raise a dispute before you confirm receipt. A Trustee admin looks at both sides and decides who gets paid - your money doesn't move until that's settled.",
   },
   {
     q: "How fast does a seller actually get paid?",
@@ -67,11 +67,11 @@ const faqs = [
   },
   {
     q: "Do I need a bank account to sell here?",
-    a: "Yes — add your payout details once from the dashboard. That's how funds reach you once a sale is confirmed.",
+    a: "Yes - add your payout details once from the dashboard. That's how funds reach you once a sale is confirmed.",
   },
   {
     q: "What happens if we just disagree?",
-    a: "Either side can raise a dispute. It pauses the payout until an admin reviews both sides — there's no automatic default to buyer or seller.",
+    a: "Either side can raise a dispute. It pauses the payout until an admin reviews both sides - there's no automatic default to buyer or seller.",
   },
 ];
 
@@ -83,7 +83,7 @@ const steps: {
   {
     icon: EscrowFlowIcon,
     title: "Buyer pays into escrow",
-    description: "Payment goes to Trustee, not the seller — held safely until the item arrives.",
+    description: "Payment goes to Trustee, not the seller - held safely until the item arrives.",
   },
   {
     icon: ShipFlowIcon,
@@ -98,7 +98,7 @@ const steps: {
   {
     icon: PayoutFlowIcon,
     title: "Seller gets paid",
-    description: "Funds release to the seller the moment the buyer confirms — or automatically after a few days.",
+    description: "Funds release to the seller the moment the buyer confirms - or automatically after a few days.",
   },
 ];
 
@@ -136,7 +136,7 @@ export default async function Home() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(225,239,154,0.14),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(144,234,242,0.12),transparent_50%)]"
         />
 
-        {/* The handshake photo — the hero's backdrop, bled off the right edge
+        {/* The handshake photo - the hero's backdrop, bled off the right edge
             on desktop; masked (not scrimmed) into the gradient so the studio
             grey blends rather than sitting as a hard-edged rectangle. */}
         <div
@@ -271,7 +271,7 @@ export default async function Home() {
             <div className="col-span-full flex items-start gap-2 bg-brand-deep p-6 text-sm text-white/80">
               <TbShieldExclamation className="mt-0.5 size-4 shrink-0 text-lime" />
               <p>
-                If something goes wrong, either side can raise a dispute — release is paused
+                If something goes wrong, either side can raise a dispute - release is paused
                 until a Trustee admin reviews it and decides who gets paid.
               </p>
             </div>
