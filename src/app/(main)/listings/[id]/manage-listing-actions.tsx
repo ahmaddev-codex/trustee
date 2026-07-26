@@ -36,12 +36,21 @@ export function ManageListingActions({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not relist listing"),
   });
 
+  const deleteListing = useMutation({
+    mutationFn: () => apiFetch(`/api/listings/${listingId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Listing deleted");
+      router.push("/dashboard?tab=listings");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not delete listing"),
+  });
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <p className="flex-1 text-sm text-muted-foreground">
         {status === "ACTIVE"
-          ? "This is your listing — it's live on the marketplace."
-          : "This listing is delisted — buyers can't see or buy it."}
+          ? "This is your listing - it's live on the marketplace."
+          : "This listing is delisted - buyers can't see or buy it."}
       </p>
       <Button variant="outline" size="sm" render={<Link href={`/listings/${listingId}/edit`} />}>
         Edit
@@ -63,6 +72,17 @@ export function ManageListingActions({
           {relist.isPending ? "Relisting…" : "Relist"}
         </Button>
       )}
+      <ConfirmActionDialog
+        trigger="Delete"
+        triggerVariant="destructive"
+        triggerSize="sm"
+        title="Delete this listing?"
+        description="This permanently removes the listing. Listings with any order history can't be deleted - delist them instead."
+        confirmLabel="Delete listing"
+        confirmVariant="destructive"
+        isPending={deleteListing.isPending}
+        onConfirm={() => deleteListing.mutate()}
+      />
     </div>
   );
 }
